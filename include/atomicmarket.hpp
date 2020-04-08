@@ -22,6 +22,11 @@ CONTRACT atomicmarket : public contract {
     ACTION addconftoken(name token_contract, symbol token_symbol);
     ACTION setmarketfee(double maker_market_fee, double taker_market_fee);
 
+    ACTION withdraw(
+      name from,
+      asset quantity
+    );
+
     ACTION regmarket(
       name fee_account,
       name marketplace_name
@@ -263,7 +268,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action)
 	if (code == receiver) {
 		switch (action) {
       EOSIO_DISPATCH_HELPER(atomicmarket, \
-      (init)(setminbidinc)(addconftoken)(setmarketfee)(regmarket) \
+      (init)(setminbidinc)(addconftoken)(setmarketfee)(regmarket)(withdraw) \
       (announcesale)(cancelsale)(purchasesale) \
       (announceauct)(cancelauct)(auctionbid)(auctclaimbuy)(auctclaimsel) \
       (logincbal)(logdecbal))

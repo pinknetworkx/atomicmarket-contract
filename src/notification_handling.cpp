@@ -97,7 +97,3 @@ void atomicmarket::receive_asset_offer(
 }
 
 
-
-
-
-
