@@ -9,11 +9,15 @@ ACTION atomicmarket::init() {
   require_auth(get_self());
   config.get_or_create(get_self(),config_s{});
 
-  marketplaces.emplace(get_self(), [&](auto& _marketplace) {
-    _marketplace.marketplace_name = DEFAULT_MARKETPLACE_NAME;
-    _marketplace.fee_account = DEFAULT_MARKETPLACE_FEE;
-  });
+  if (marketplaces.find(name("default").value) == marketplaces.end()) {
+    marketplaces.emplace(get_self(), [&](auto& _marketplace) {
+      _marketplace.marketplace_name = DEFAULT_MARKETPLACE_NAME;
+      _marketplace.fee_account = DEFAULT_MARKETPLACE_FEE;
+    });
+  }
 }
+
+
 
 
 /**
@@ -29,6 +33,8 @@ ACTION atomicmarket::setminbidinc(double minimum_bid_increase) {
 
   config.set(current_config, get_self());
 }
+
+
 
 
 /**
@@ -51,6 +57,45 @@ ACTION atomicmarket::addconftoken(name token_contract, symbol token_symbol) {
 
   config.set(current_config, get_self());
 }
+
+
+
+
+/**
+* Adds a stable pair that can be used for stable sales
+* 
+* @required_auth The contract itself
+*/
+ACTION atomicmarket::adddelphi(
+  name delphi_pair_name,
+  symbol stable_symbol,
+  symbol token_symbol
+) {
+  require_auth(get_self());
+
+  auto pair_itr = delphioracle_pairs.require_find(delphi_pair_name.value,
+  "The provided delphi_pair_name does not exist in the delphi oracle contract");
+
+  check(is_symbol_supported(token_symbol), "The token symbol does not belong to a supported token");
+
+  config_s current_config = config.get();
+
+  for (DELPHIPAIR delphi_pair : current_config.supported_delphi_pairs) {
+    check(delphi_pair.delphi_pair_name != delphi_pair_name,
+    "There already exists a delphi pair using the provided delphi pair name");
+  }
+
+  current_config.supported_delphi_pairs.push_back({
+    .delphi_pair_name = delphi_pair_name,
+    .stable_symbol = stable_symbol,
+    .token_symbol = token_symbol
+  });
+
+  config.set(current_config, get_self());
+
+}
+
+
 
 
 /**

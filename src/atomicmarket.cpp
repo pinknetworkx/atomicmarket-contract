@@ -2,6 +2,7 @@
 
 #include "admin_actions.cpp"
 #include "sale_actions.cpp"
+#include "stablesale_actions.cpp"
 #include "auction_actions.cpp"
 #include "log_actions.cpp"
 #include "notification_handling.cpp"

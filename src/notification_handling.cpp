@@ -91,6 +91,19 @@ void atomicmarket::receive_asset_offer(
       _sale.offer_id = offer_id;
     });
 
+  } else if (memo == "stablesale") {
+    check(sender_asset_ids.size() == 1, "You must offer exactly one asset per action for a sale");
+    check(recipient_asset_ids.size() == 0, "You must not ask for any assets in return in a sale offer");
+
+    uint64_t asset_id = sender_asset_ids[0];
+    stablesales_t sender_stablesales = get_stablesales(sender);
+    auto stablesale_itr = sender_stablesales.require_find(asset_id,
+    "You have not created have a stable sale for this asset");
+
+    sender_stablesales.modify(stablesale_itr, same_payer, [&](auto& _stablesale) {
+      _stablesale.offer_id = offer_id;
+    });
+
   } else {
     check(false, "Invalid memo");
   }

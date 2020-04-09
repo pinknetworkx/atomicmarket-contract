@@ -17,12 +17,27 @@ atomicmarket::sales_t atomicmarket::get_sales(name acc) {
 
 
 /**
+* Gets the sales table with the scope seller
+*/
+atomicmarket::stablesales_t atomicmarket::get_stablesales(name acc) {
+  return stablesales_t(get_self(), acc.value);
+}
+
+
+/**
 * Gets the auctions table with the scope seller
 */
 atomicmarket::auctions_t atomicmarket::get_auctions(name acc) {
   return auctions_t(get_self(), acc.value);
 }
 
+
+/**
+* Gets the delphioracle datapoints table with the scope pair_name
+*/
+atomicmarket::datapoints_t atomicmarket::get_delphioracle_datapoints(name pair_name) {
+  return datapoints_t(DELPHIORACLE_ACCOUNT, pair_name.value);
+}
 
 
 
