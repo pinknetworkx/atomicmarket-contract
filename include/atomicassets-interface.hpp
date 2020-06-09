@@ -1,3 +1,12 @@
+/*
+
+This file is not used for the actual atomicassets contract.
+It can be used as a header file for other contracts to access the atomicassets tables
+and custom data types.
+
+*/
+
+
 #include <eosio/eosio.hpp>
 #include <eosio/singleton.hpp>
 #include <eosio/asset.hpp>
@@ -5,18 +14,44 @@
 using namespace eosio;
 using namespace std;
 
+
 namespace atomicassets {
 
     static constexpr name ATOMICASSETS_ACCOUNT = name("atomicassets");
 
-    struct TOKEN{
-        name token_contract;
-        symbol token_symbol;
-    };
+    //Custom vector types need to be defined because otherwise a bug in the ABI serialization
+    //would cause the ABI to be invalid
+    typedef std::vector <int8_t> INT8_VEC;
+    typedef std::vector <int16_t> INT16_VEC;
+    typedef std::vector <int32_t> INT32_VEC;
+    typedef std::vector <int64_t> INT64_VEC;
+    typedef std::vector <uint8_t> UINT8_VEC;
+    typedef std::vector <uint16_t> UINT16_VEC;
+    typedef std::vector <uint32_t> UINT32_VEC;
+    typedef std::vector <uint64_t> UINT64_VEC;
+    typedef std::vector <float> FLOAT_VEC;
+    typedef std::vector <double> DOUBLE_VEC;
+    typedef std::vector <std::string> STRING_VEC;
+
+    typedef std::variant< \
+        int8_t, int16_t, int32_t, int64_t, \
+        uint8_t, uint16_t, uint32_t, uint64_t, \
+        float, double, std::string, \
+        INT8_VEC, INT16_VEC, INT32_VEC, INT64_VEC, \
+        UINT8_VEC, UINT16_VEC, UINT32_VEC, UINT64_VEC, \
+        FLOAT_VEC, DOUBLE_VEC, STRING_VEC
+    > ATOMIC_ATTRIBUTE;
+    
+    typedef std::map <std::string, ATOMIC_ATTRIBUTE> ATTRIBUTE_MAP;
 
     struct FORMAT{
         string name;
         string type;
+    };
+
+    struct TOKEN{
+        name token_contract;
+        symbol token_symbol;
     };
 
     struct collections_s{
@@ -34,36 +69,36 @@ namespace atomicassets {
 
 
     //Scope: collection_name
-    struct schemes_s{
-        name                scheme_name;
+    struct schemas_s{
+        name                schema_name;
         vector<FORMAT>      format;
 
-        uint64_t primary_key() const { return scheme_name.value; }
+        uint64_t primary_key() const { return schema_name.value; }
     };
-    typedef multi_index<name("schemes"), schemes_s> schemes_t;
+    typedef multi_index<name("schemas"), schemas_s> schemas_t;
 
 
     //Scope: collection_name
-    struct presets_s{
-        uint32_t            preset_id;
-        name                scheme_name;
+    struct templates_s{
+        uint32_t            template_id;
+        name                schema_name;
         bool                transferable;
         bool                burnable;
         uint32_t            max_supply;
         uint32_t            issued_supply;
         vector<uint8_t>     immustruct_serialized_data;
 
-        uint64_t primary_key() const { return uint64_t{preset_id}; }
+        uint64_t primary_key() const { return uint64_t{template_id}; }
     };
-    typedef multi_index<name("presets"), presets_s> presets_t;
+    typedef multi_index<name("templates"), templates_s> templates_t;
 
 
     //Scope: owner
     struct assets_s{
         uint64_t            asset_id;
         name                collection_name;
-        name                scheme_name;
-        int32_t             preset_id;
+        name                schema_name;
+        int32_t             template_id;
         name                ram_payer;
         vector<asset>       backed_tokens;
         vector<uint8_t>     immustruct_serialized_data;
@@ -102,7 +137,7 @@ namespace atomicassets {
 
     struct config_s{
         uint64_t            asset_counter = 1099511627780; //2^40
-        int32_t             preset_counter = 1;
+        int32_t             template_counter = 1;
         uint64_t            offer_counter = 1;
         vector<FORMAT>      collection_format = {};
         vector<TOKEN>       supported_tokens = {};
@@ -126,11 +161,11 @@ namespace atomicassets {
         return assets_t(ATOMICASSETS_ACCOUNT, acc.value);
     }
 
-    schemes_t get_schemes(name collection_name) {
-        return schemes_t(ATOMICASSETS_ACCOUNT, collection_name.value);
+    schemas_t get_schemas(name collection_name) {
+        return schemas_t(ATOMICASSETS_ACCOUNT, collection_name.value);
     }
 
-    presets_t get_presets(name collection_name) {
-        return presets_t(ATOMICASSETS_ACCOUNT, collection_name.value);
+    templates_t get_templates(name collection_name) {
+        return templates_t(ATOMICASSETS_ACCOUNT, collection_name.value);
     }
 };
