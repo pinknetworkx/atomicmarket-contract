@@ -277,8 +277,26 @@ ACTION atomicmarket::cancelsale(
     auto sale_itr = sales.require_find(sale_id,
         "No sale with this sale_id exists");
     
-    require_auth(sale_itr->seller);
 
+    bool is_sale_invalid = false;
+
+    if (sale_itr->offer_id != -1) {
+        if (atomicassets::offers.find(sale_itr->offer_id) == atomicassets::offers.end()) {
+            is_sale_invalid = true;
+        }
+    }
+
+    atomicassets::assets_t seller_assets = atomicassets::get_assets(sale_itr->seller);
+    for (uint64_t asset_id : sale_itr->asset_ids) {
+        if (seller_assets.find(asset_id) == seller_assets.end()) {
+            is_sale_invalid = true;
+            break;
+        }
+    }
+
+    check(is_sale_invalid || has_auth(sale_itr->seller),
+        "The sale is not invalid, therefore the authorization of the seller is needed to cancel it");
+    
 
     if (sale_itr->offer_id != -1) {
         if (atomicassets::offers.find(sale_itr->offer_id) != atomicassets::offers.end()) {
@@ -505,7 +523,22 @@ ACTION atomicmarket::cancelauct(
     auto auction_itr = auctions.require_find(auction_id,
         "No auction with this auction_id exists");
     
-    require_auth(auction_itr->seller);
+
+    bool is_auction_invalid = false;
+
+    if (!auction_itr->assets_transferred) {
+        atomicassets::assets_t seller_assets = atomicassets::get_assets(auction_itr->seller);
+        for (uint64_t asset_id : auction_itr->asset_ids) {
+            if (seller_assets.find(asset_id) == seller_assets.end()) {
+                is_auction_invalid = true;
+                break;
+            }
+        }
+    }
+
+    check(is_auction_invalid || has_auth(auction_itr->seller),
+        "The auction is not invalid, therefore the authorization of the seller is needed to cancel it");
+    
 
     if (auction_itr->assets_transferred) {
         check(auction_itr->current_bidder == name(""),
