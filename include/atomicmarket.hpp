@@ -103,6 +103,17 @@ public:
     );
 
 
+    ACTION paysaleram(
+        name payer,
+        uint64_t sale_id
+    );
+
+    ACTION payauctram(
+        name payer,
+        uint64_t auction_id
+    );
+
+
     void receive_token_transfer(
         name from,
         name to,
@@ -295,6 +306,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
             (init)(setminbidinc)(addconftoken)(adddelphi)(setmarketfee)(regmarket)(withdraw) \
             (announcesale)(cancelsale)(purchasesale) \
             (announceauct)(cancelauct)(auctionbid)(auctclaimbuy)(auctclaimsel) \
+            (paysaleram)(payauctram) \
             (logincbal)(logdecbal)(lognewsale)(lognewauct))
         }
     } else if (code == atomicassets::ATOMICASSETS_ACCOUNT.value && action == name("transfer").value) {

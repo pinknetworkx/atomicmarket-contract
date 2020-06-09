@@ -696,6 +696,43 @@ ACTION atomicmarket::auctclaimsel(
 
 
 
+/**
+* Pays the RAM cost for an already existing sale
+*/
+ACTION atomicmarket::paysaleram(
+    name payer,
+    uint64_t sale_id
+) {
+    require_auth(payer);
+
+    auto sale_itr = sales.require_find(sale_id,
+        "No sale with this id exists");
+    
+    sales.modify(sale_itr, payer, [&](auto &_offer) {
+
+    });
+}
+
+
+/**
+* Pays the RAM cost for an already existing auction
+*/
+ACTION atomicmarket::payauctram(
+    name payer,
+    uint64_t auction_id
+) {
+    require_auth(payer);
+
+    auto auction_itr = auctions.require_find(auction_id,
+        "No auction with this id exists");
+    
+    auctions.modify(auction_itr, payer, [&](auto &_offer) {
+
+    });
+}
+
+
+
 
 /**
 *  This function is called when a transfer receipt from any token contract is sent to the atomicmarket contract
