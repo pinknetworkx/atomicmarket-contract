@@ -66,6 +66,7 @@ ACTION atomicmarket::addconftoken(name token_contract, symbol token_symbol) {
 */
 ACTION atomicmarket::adddelphi(
     name delphi_pair_name,
+    bool invert_delphi_pair,
     symbol listing_symbol,
     symbol settlement_symbol
 ) {
@@ -85,7 +86,8 @@ ACTION atomicmarket::adddelphi(
     current_config.supported_symbol_pairs.push_back({
         .listing_symbol = listing_symbol,
         .settlement_symbol = settlement_symbol,
-        .delphi_pair_name = delphi_pair_name
+        .delphi_pair_name = delphi_pair_name,
+        .invert_delphi_pair = invert_delphi_pair
     });
 
     config.set(current_config, get_self());
@@ -352,9 +354,9 @@ ACTION atomicmarket::purchasesale(
         sale_price = sale_itr->listing_price;
 
     } else {
-        name delphi_pair_name = require_get_delphi_pair_name(sale_itr->listing_price.symbol, sale_itr->settlement_symbol);
+        SYMBOLPAIR symbol_pair = require_get_symbol_pair(sale_itr->listing_price.symbol, sale_itr->settlement_symbol);
 
-        delphioracle::datapoints_t datapoints = delphioracle::get_datapoints(delphi_pair_name);
+        delphioracle::datapoints_t datapoints = delphioracle::get_datapoints(symbol_pair.delphi_pair_name);
 
         bool found_point_with_median = false;
         for (auto itr = datapoints.begin(); itr != datapoints.end(); itr++) {
@@ -367,17 +369,21 @@ ACTION atomicmarket::purchasesale(
             "No datapoint with the intended median was found. You likely took too long to confirm your transaction");
 
 
-        //Using the price denoted in the stable symbol and the median price provided by the delphioracle,
-        //the final price in the actual token is calculated
+        //Using the price denoted in the listing symbol and the median price provided by the delphioracle,
+        //the final price in the settlement token is calculated
 
-        double stable_price = (double) sale_itr->listing_price.amount / pow(10, sale_itr->listing_price.symbol.precision());
-        auto pair_itr = delphioracle::pairs.find(delphi_pair_name.value);
-        double stable_per_token = (double) intended_delphi_median / pow(10, pair_itr->quoted_precision);
-        double token_price = stable_price / stable_per_token;
+        double listing_price = (double) sale_itr->listing_price.amount / pow(10, sale_itr->listing_price.symbol.precision());
+        auto pair_itr = delphioracle::pairs.find(symbol_pair.delphi_pair_name.value);
+        double listing_per_settlement = (double) intended_delphi_median / pow(10, pair_itr->quoted_precision);
+        if (symbol_pair.invert_delphi_pair) {
+            listing_per_settlement = 1 / listing_per_settlement;
+        }
+        double settlement_price = listing_price / listing_per_settlement;
 
-        uint64_t final_price_amount = (uint64_t)(token_price * pow(10, sale_itr->settlement_symbol.precision()));
+
+        uint64_t settlement_price_amount = (uint64_t)(settlement_price * pow(10, sale_itr->settlement_symbol.precision()));
         
-        sale_price = asset(final_price_amount, sale_itr->settlement_symbol);
+        sale_price = asset(settlement_price_amount, sale_itr->settlement_symbol);
 
     }
 
@@ -948,7 +954,7 @@ name atomicmarket::require_get_supported_token_contract(
 
 
 
-name atomicmarket::require_get_delphi_pair_name(
+atomicmarket::SYMBOLPAIR atomicmarket::require_get_symbol_pair(
     symbol listing_symbol,
     symbol settlement_symbol
 ) {
@@ -956,12 +962,12 @@ name atomicmarket::require_get_delphi_pair_name(
 
     for (SYMBOLPAIR symbol_pair : current_config.supported_symbol_pairs) {
         if (symbol_pair.listing_symbol == listing_symbol && symbol_pair.settlement_symbol == settlement_symbol) {
-            return symbol_pair.delphi_pair_name;
+            return symbol_pair;
         }
     }
 
     check(false, "No symbol pair with the specified listing - settlement symbol combination exists");
-    return name(""); //To silence the compiler warning
+    return {}; //To silence the compiler warning
 }
 
 

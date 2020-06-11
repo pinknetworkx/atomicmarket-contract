@@ -34,13 +34,26 @@ public:
 
     ACTION init();
 
-    ACTION setminbidinc(double minimum_bid_increase);
+    ACTION setminbidinc(
+        double minimum_bid_increase
+    );
 
-    ACTION addconftoken(name token_contract, symbol token_symbol);
+    ACTION addconftoken(
+        name token_contract,
+        symbol token_symbol
+    );
 
-    ACTION adddelphi(name delphi_pair_name, symbol listing_symbol, symbol settlement_symbol);
+    ACTION adddelphi(
+        name delphi_pair_name,
+        bool invert_delphi_pair,
+        symbol listing_symbol,
+        symbol settlement_symbol
+    );
 
-    ACTION setmarketfee(double maker_market_fee, double taker_market_fee);
+    ACTION setmarketfee(
+        double maker_market_fee,
+        double taker_market_fee
+    );
 
 
     ACTION regmarket(
@@ -177,6 +190,7 @@ private:
         symbol listing_symbol;
         symbol settlement_symbol;
         name delphi_pair_name;
+        bool invert_delphi_pair;
     };
 
 
@@ -263,7 +277,7 @@ private:
 
     name require_get_supported_token_contract(symbol token_symbol);
 
-    name require_get_delphi_pair_name(symbol listing_symbol, symbol settlement_symbol);
+    SYMBOLPAIR require_get_symbol_pair(symbol listing_symbol, symbol settlement_symbol);
 
 
     bool is_token_supported(name token_contract, symbol token_symbol);
