@@ -28,10 +28,10 @@ ACTION atomicmarket::init() {
 */
 ACTION atomicmarket::setminbidinc(double minimum_bid_increase) {
     require_auth(get_self());
+    check(minimum_bid_increase > 0, "The bid increase must be greater than 0");
+
     config_s current_config = config.get();
-
     current_config.minimum_bid_increase = minimum_bid_increase;
-
     config.set(current_config, get_self());
 }
 
