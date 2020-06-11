@@ -262,6 +262,8 @@ private:
         vector<SYMBOLPAIR>      supported_symbol_pairs = {};
         double                  maker_market_fee = 0.01;
         double                  taker_market_fee = 0.01;
+        name                    atomicassets_account = atomicassets::ATOMICASSETS_ACCOUNT;
+        name                    delphioracle_accounts = delphioracle::DELPHIORACLE_ACCOUNT;
     };
     typedef singleton<name("config"), config_s> config_t;
     // https://github.com/EOSIO/eosio.cdt/issues/280
