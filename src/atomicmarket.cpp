@@ -105,6 +105,9 @@ ACTION atomicmarket::adddelphi(
 ACTION atomicmarket::setmarketfee(double maker_market_fee, double taker_market_fee) {
     require_auth(get_self());
 
+    check(maker_market_fee >= 0 && taker_market_fee >= 0,
+        "Market fees need to be at least 0");
+
     config_s current_config = config.get();
 
     current_config.maker_market_fee = maker_market_fee;
