@@ -84,9 +84,9 @@ ACTION atomicmarket::adddelphi(
             "The settlement symbol precision needs to be equal to the delphi base smybol precision for non inverted pairs");
     } else {
         check(listing_symbol.precision() == pair_itr->base_symbol.precision(),
-            "The listing symbol precision needs to be equal to the delphi base smybol precision for non inverted pairs");
+            "The listing symbol precision needs to be equal to the delphi base smybol precision for inverted pairs");
         check(settlement_symbol.precision() == pair_itr->quote_symbol.precision(),
-            "The settlement symbol precision needs to be equal to the delphi quote smybol precision for non inverted pairs");
+            "The settlement symbol precision needs to be equal to the delphi quote smybol precision for inverted pairs");
     }
 
     check(!is_symbol_pair_supported(listing_symbol, settlement_symbol),
