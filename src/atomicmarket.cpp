@@ -72,6 +72,9 @@ ACTION atomicmarket::adddelphi(
 ) {
     require_auth(get_self());
 
+    check(listing_symbol != settlement_symbol,
+        "Listing symbol and settlement symbol must be different");
+
     delphioracle::pairs.require_find(delphi_pair_name.value,
         "The provided delphi_pair_name does not exist in the delphi oracle contract");
 
