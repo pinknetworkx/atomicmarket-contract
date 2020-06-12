@@ -163,8 +163,10 @@ ACTION atomicmarket::withdraw(
 ) {
     require_auth(owner);
 
+    check(token_to_withdraw.amount > 0, "token_to_withdraw must be positive");
+
     //This will throw if the user does not have sufficient balance
-    internal_deduct_balance(owner, token_to_withdraw, "Withdrawaö");
+    internal_decrease_balance(owner, token_to_withdraw, "Withdrawaö");
 
     name withdraw_token_contract = require_get_supported_token_contract(token_to_withdraw.symbol);
 
@@ -399,7 +401,7 @@ ACTION atomicmarket::purchasesale(
     }
 
 
-    internal_deduct_balance(
+    internal_decrease_balance(
         buyer,
         sale_price,
         string("Purchased Sale")
@@ -617,7 +619,7 @@ ACTION atomicmarket::auctionbid(
         );
     }
 
-    internal_deduct_balance(
+    internal_decrease_balance(
         bidder,
         bid,
         string("Auction bid")
@@ -1092,7 +1094,7 @@ void atomicmarket::internal_payout_sale(
 * It is not checked whether the added token is a supported token, this has to be checked before calling this function
 */
 void atomicmarket::internal_add_balance(
-    name user,
+    name owner,
     asset quantity,
     string reason
 ) {
@@ -1100,25 +1102,25 @@ void atomicmarket::internal_add_balance(
         return;
     }
 
-    auto balance_itr = balances.find(user.value);
+    auto balance_itr = balances.find(owner.value);
 
     vector <asset> quantities;
     if (balance_itr == balances.end()) {
         //No balance table row exists yet
         quantities = {quantity};
         balances.emplace(get_self(), [&](auto &_balance) {
-            _balance.owner = user;
+            _balance.owner = owner;
             _balance.quantities = quantities;
         });
 
     } else {
-        //A balance table row already exists for user
+        //A balance table row already exists for owner
         quantities = balance_itr->quantities;
 
         bool found_token = false;
         for (asset &token : quantities) {
             if (token.symbol == quantity.symbol) {
-                //If the user already has a balance for the token, this balance is increased
+                //If the owner already has a balance for the token, this balance is increased
                 found_token = true;
                 token.amount += quantity.amount;
                 break;
@@ -1126,7 +1128,7 @@ void atomicmarket::internal_add_balance(
         }
 
         if (!found_token) {
-            //If the user does not already have a balance for the token, it is added to the vector
+            //If the owner does not already have a balance for the token, it is added to the vector
             quantities.push_back(quantity);
         }
 
@@ -1140,7 +1142,7 @@ void atomicmarket::internal_add_balance(
         get_self(),
         name("logincbal"),
         make_tuple(
-            user,
+            owner,
             quantity,
             reason
         )
@@ -1153,39 +1155,35 @@ void atomicmarket::internal_add_balance(
 * If the account does not has less than that quantity in his balance, this function will cause the
 * transaction to fail
 */
-void atomicmarket::internal_deduct_balance(
-    name user,
+void atomicmarket::internal_decrease_balance(
+    name owner,
     asset quantity,
     string reason
 ) {
-    auto balance_itr = balances.require_find(user.value,
-        "The user does not have a sufficient balance (No balances row)");
+    auto balance_itr = balances.require_find(owner.value,
+        "The specified account does not have a balance table row");
 
-    vector <asset> user_balance = balance_itr->quantities;
-
+    vector <asset> quantities = balance_itr->quantities;
     bool found_token = false;
-    for (auto itr = user_balance.begin(); itr != user_balance.end(); itr++) {
+    for (auto itr = quantities.begin(); itr != quantities.end(); itr++) {
         if (itr->symbol == quantity.symbol) {
             found_token = true;
-
             check(itr->amount >= quantity.amount,
-                "The user does not have a sufficient balance (Specific token balance exists but is too low)");
-
+                "The specified account's balance is lower than the specified quantity");
             itr->amount -= quantity.amount;
             if (itr->amount == 0) {
-                user_balance.erase(itr);
+                quantities.erase(itr);
             }
-
             break;
         }
     }
-
     check(found_token,
-        "The user does not have a sufficient balance (Balances row exists, but no entry for specific token)");
+        "The specified account does not have a balance for the symbol specified in the quantity");
 
-    if (user_balance.size() > 0) {
-        balances.modify(balance_itr, get_self(), [&](auto &_balance) {
-            _balance.quantities = user_balance;
+    //Updating the balances table
+    if (quantities.size() > 0) {
+        balances.modify(balance_itr, same_payer, [&](auto &_balance) {
+            _balance.quantities = quantities;
         });
     } else {
         balances.erase(balance_itr);
@@ -1196,7 +1194,7 @@ void atomicmarket::internal_deduct_balance(
         get_self(),
         name("logdecbal"),
         make_tuple(
-            user,
+            owner,
             quantity,
             reason
         )

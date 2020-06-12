@@ -305,9 +305,9 @@ private:
         double collection_fee
     );
 
-    void internal_add_balance(name user, asset quantity, string reason);
+    void internal_add_balance(name owner, asset quantity, string reason);
 
-    void internal_deduct_balance(name user, asset quantity, string reason);
+    void internal_decrease_balance(name owner, asset quantity, string reason);
 
     void internal_transfer_assets(name to, vector<uint64_t> asset_ids, string memo);
 
