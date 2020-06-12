@@ -162,7 +162,7 @@ public:
     ACTION lognewauct(
         uint64_t auction_id,
         name seller,
-        vector<uint64_t> asset_id,
+        vector<uint64_t> asset_ids,
         asset starting_bid,
         uint32_t duration,
         name maker_marketplace
