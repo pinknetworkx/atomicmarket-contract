@@ -251,7 +251,7 @@ ACTION atomicmarket::announcesale(
     }
 
 
-    check(listing_price.amount >= 0, "The sale price must be positive");
+    check(listing_price.amount > 0, "The sale price must be greater than zero");
 
     check(is_valid_marketplace(maker_marketplace), "The maker marketplace is not a valid marketplace");
 
@@ -499,7 +499,7 @@ ACTION atomicmarket::announceauct(
 
 
     check(is_symbol_supported(starting_bid.symbol), "The specified starting bid token is not supported.");
-    check(starting_bid.amount >= 0, "The starting bid must be positive");
+    check(starting_bid.amount > 0, "The starting bid must be greater than zero");
 
     check(is_valid_marketplace(maker_marketplace), "The maker marketplace is not a valid marketplace");
 
