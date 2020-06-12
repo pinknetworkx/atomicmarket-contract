@@ -371,6 +371,7 @@ ACTION atomicmarket::purchasesale(
     asset sale_price;
 
     if (sale_itr->listing_price.symbol == sale_itr->settlement_symbol) {
+        check(intended_delphi_median == 0, "intended delphi median needs to be 0 for non delphi sales");
         sale_price = sale_itr->listing_price;
 
     } else {
