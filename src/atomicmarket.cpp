@@ -75,8 +75,19 @@ ACTION atomicmarket::adddelphi(
     check(listing_symbol != settlement_symbol,
         "Listing symbol and settlement symbol must be different");
 
-    delphioracle::pairs.require_find(delphi_pair_name.value,
+    auto pair_itr = delphioracle::pairs.require_find(delphi_pair_name.value,
         "The provided delphi_pair_name does not exist in the delphi oracle contract");
+    if (!invert_delphi_pair) {
+        check(listing_symbol.precision() == pair_itr->quote_symbol.precision(),
+            "The listing symbol precision needs to be equal to the delphi quote smybol precision for non inverted pairs");
+        check(settlement_symbol.precision() == pair_itr->base_symbol.precision(),
+            "The settlement symbol precision needs to be equal to the delphi base smybol precision for non inverted pairs");
+    } else {
+        check(listing_symbol.precision() == pair_itr->base_symbol.precision(),
+            "The listing symbol precision needs to be equal to the delphi base smybol precision for non inverted pairs");
+        check(settlement_symbol.precision() == pair_itr->quote_symbol.precision(),
+            "The settlement symbol precision needs to be equal to the delphi quote smybol precision for non inverted pairs");
+    }
 
     check(!is_symbol_pair_supported(listing_symbol, settlement_symbol),
         "There already exists a symbol pair with the specified listing - settlement symbol combination");
@@ -392,17 +403,21 @@ ACTION atomicmarket::purchasesale(
 
         //Using the price denoted in the listing symbol and the median price provided by the delphioracle,
         //the final price in the settlement token is calculated
-
-        double listing_price = (double) sale_itr->listing_price.amount / pow(10, sale_itr->listing_price.symbol.precision());
         auto pair_itr = delphioracle::pairs.find(symbol_pair.delphi_pair_name.value);
-        double listing_per_settlement = (double) intended_delphi_median / pow(10, pair_itr->quoted_precision);
-        if (symbol_pair.invert_delphi_pair) {
-            listing_per_settlement = 1 / listing_per_settlement;
+
+        uint64_t settlement_price_amount;
+
+        if (!symbol_pair.invert_delphi_pair) {
+            //Normal
+            settlement_price_amount = (double) sale_itr->listing_price.amount / (double) intended_delphi_median * pow(
+                10, pair_itr->quoted_precision + sale_itr->settlement_symbol.precision() - sale_itr->listing_price.symbol.precision()
+            );
+        } else {
+            //Inverted
+            settlement_price_amount = sale_itr->listing_price.amount * intended_delphi_median * pow(
+                10, -pair_itr->quoted_precision + sale_itr->settlement_symbol.precision() - sale_itr->listing_price.symbol.precision()
+            );
         }
-        double settlement_price = listing_price / listing_per_settlement;
-
-
-        uint64_t settlement_price_amount = (uint64_t)(settlement_price * pow(10, sale_itr->settlement_symbol.precision()));
         
         sale_price = asset(settlement_price_amount, sale_itr->settlement_symbol);
 
