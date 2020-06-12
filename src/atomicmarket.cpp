@@ -211,6 +211,13 @@ ACTION atomicmarket::announcesale(
     for (uint64_t asset_id : asset_ids) {
         auto asset_itr = seller_assets.require_find(asset_id,
             ("You do not own at least one of the assets - " + to_string(asset_id)).c_str());
+        
+        if (asset_itr->template_id != -1) {
+            atomicassets::templates_t asset_template = atomicassets::get_templates(asset_itr->collection_name);
+            auto template_itr = asset_template.find(asset_itr->template_id);
+            check(template_itr->transferable,
+                ("At least one of the assets is not transferable - " + to_string(asset_id)).c_str());
+        }
 
         if (assets_collection_name == name("")) {
             assets_collection_name = asset_itr->collection_name;
@@ -458,6 +465,13 @@ ACTION atomicmarket::announceauct(
     for (uint64_t asset_id : asset_ids) {
         auto asset_itr = seller_assets.require_find(asset_id,
             ("You do not own at least one of the assets - " + to_string(asset_id)).c_str());
+        
+        if (asset_itr->template_id != -1) {
+            atomicassets::templates_t asset_template = atomicassets::get_templates(asset_itr->collection_name);
+            auto template_itr = asset_template.find(asset_itr->template_id);
+            check(template_itr->transferable,
+                ("At least one of the assets is not transferable - " + to_string(asset_id)).c_str());
+        }
 
         if (assets_collection_name == name("")) {
             assets_collection_name = asset_itr->collection_name;
