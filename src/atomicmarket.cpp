@@ -862,7 +862,7 @@ void atomicmarket::receive_asset_offer(
             sale_itr++;
         }
 
-        check(sale_itr->offer_id != -1, "An offer for this sale has already been created");
+        check(sale_itr->offer_id == -1, "An offer for this sale has already been created");
 
         sales_by_hash.modify(sale_itr, same_payer, [&](auto &_sale) {
             _sale.offer_id = offer_id;
