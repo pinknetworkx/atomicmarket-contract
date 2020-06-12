@@ -852,7 +852,14 @@ void atomicmarket::receive_asset_offer(
         auto sale_itr = sales_by_hash.find(asset_ids_hash);
 
         while (true) {
-            check(sale_itr != sales_by_hash.end() && sale_itr->asset_ids == sender_asset_ids,
+            bool are_assets_equal = std::is_permutation(
+                sale_itr->asset_ids.begin(),
+                sale_itr->asset_ids.end(),
+                sender_asset_ids.begin(),
+                sender_asset_ids.end()
+            );
+
+            check(sale_itr != sales_by_hash.end() && are_assets_equal,
                 "No sale was announced by this sender for the oferred assets");
 
             if (sale_itr->seller == sender) {
