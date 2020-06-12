@@ -63,8 +63,8 @@ public:
 
 
     ACTION withdraw(
-        name from,
-        asset quantity
+        name owner,
+        asset token_to_withdraw
     );
 
 

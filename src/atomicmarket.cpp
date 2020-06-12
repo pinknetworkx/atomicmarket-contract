@@ -153,15 +153,20 @@ ACTION atomicmarket::regmarket(
 
 
 /**
-* Withdraws a token from a users balance. The specified quantity is then transferred to the user.
+* Withdraws a token from a users balance. The specified token is then transferred to the user.
+* 
+* @required_auth owner
 */
 ACTION atomicmarket::withdraw(
-    name from,
-    asset quantity
+    name owner,
+    asset token_to_withdraw
 ) {
-    require_auth(from);
+    require_auth(owner);
 
-    name withdraw_token_contract = require_get_supported_token_contract(quantity.symbol);
+    //This will throw if the user does not have sufficient balance
+    internal_deduct_balance(owner, token_to_withdraw, "Withdrawaö");
+
+    name withdraw_token_contract = require_get_supported_token_contract(token_to_withdraw.symbol);
 
     action(
         permission_level{get_self(), name("active")},
@@ -169,8 +174,8 @@ ACTION atomicmarket::withdraw(
         name("transfer"),
         make_tuple(
             get_self(),
-            from,
-            quantity,
+            owner,
+            token_to_withdraw,
             string("Withdrawal")
         )
     ).send();
