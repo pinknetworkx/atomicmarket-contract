@@ -686,14 +686,14 @@ ACTION atomicmarket::auctclaimbuy(
         "No auction with this auction_id exists");
 
     check(auction_itr->assets_transferred, "The auction is not active");
+
+    check(auction_itr->current_bidder != name(""),
+        "The auction does not have any bids");
     
     require_auth(auction_itr->current_bidder);
 
     check(auction_itr->end_time < current_time_point().sec_since_epoch(),
         "The auction is not finished yet");
-
-    check(auction_itr->current_bidder != name(""),
-        "The auction does not have any bids");
 
     internal_transfer_assets(
         auction_itr->current_bidder,
