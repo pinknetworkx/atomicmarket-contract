@@ -302,6 +302,9 @@ ACTION atomicmarket::announcesale(
 /**
 * Cancels a sale. The sale can both be active or inactive
 * 
+* If the sale is invalid (offer for the sale was cancelled or the seller does not own at least one
+* of the assets on sale, this action can be called without the authorization of the seller
+* 
 * @required_auth The sale's seller
 */
 ACTION atomicmarket::cancelsale(
@@ -565,6 +568,9 @@ ACTION atomicmarket::announceauct(
 /**
 * Cancels an auction. If the auction is active, it must not have any bids yet.
 * Auctions with bids can't be cancelled.
+* 
+* If the auction is invalid (it is not active yet and the seller does not own at least one of the
+* assets listed in the auction) this action can be called without the autorization of the seller
 * 
 * @required_auth seller
 */
