@@ -831,7 +831,14 @@ void atomicmarket::receive_asset_transfer(
         auto auction_itr = auctions_by_hash.find(asset_ids_hash);
 
         while (true) {
-            check(auction_itr != auctions_by_hash.end() && auction_itr->asset_ids == asset_ids,
+            bool are_assets_equal = std::is_permutation(
+                auction_itr->asset_ids.begin(),
+                auction_itr->asset_ids.end(),
+                asset_ids.begin(),
+                asset_ids.end()
+            );
+
+            check(auction_itr != auctions_by_hash.end() && are_assets_equal,
                 "No announced, non-finished auction by the sender for these assets exists");
 
             if (auction_itr->seller == from && current_time_point().sec_since_epoch() < auction_itr->end_time) {
