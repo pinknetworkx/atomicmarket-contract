@@ -279,6 +279,7 @@ ACTION atomicmarket::announcesale(
         _sale.listing_price = listing_price;
         _sale.settlement_symbol = settlement_symbol;
         _sale.maker_marketplace = maker_marketplace != name("") ? maker_marketplace : DEFAULT_MARKETPLACE_NAME;
+        _sale.collection_name = assets_collection_name;
         _sale.collection_fee = get_collection_fee(asset_ids[0], seller);
     });
 
@@ -438,7 +439,7 @@ ACTION atomicmarket::purchasesale(
         sale_itr->seller,
         sale_itr->maker_marketplace,
         taker_marketplace != name("") ? taker_marketplace : DEFAULT_MARKETPLACE_NAME,
-        get_collection_author(sale_itr->asset_ids[0], sale_itr->seller),
+        get_collection_author(sale_itr->collection_name),
         sale_itr->collection_fee
     );
 
@@ -544,8 +545,8 @@ ACTION atomicmarket::announceauct(
         _auction.claimed_by_buyer = false;
         _auction.maker_marketplace = maker_marketplace != name("") ? maker_marketplace : DEFAULT_MARKETPLACE_NAME;
         _auction.taker_marketplace = name("");
+        _auction.collection_name = assets_collection_name;
         _auction.collection_fee = get_collection_fee(asset_ids[0], seller);
-        _auction.collection_author = get_collection_author(asset_ids[0], seller);
     });
 
 
@@ -738,7 +739,7 @@ ACTION atomicmarket::auctclaimsel(
         auction_itr->seller,
         auction_itr->maker_marketplace,
         auction_itr->taker_marketplace,
-        auction_itr->collection_author,
+        get_collection_author(auction_itr->collection_name),
         auction_itr->collection_fee
     );
 
@@ -966,14 +967,9 @@ bool atomicmarket::is_valid_marketplace(name marketplace) {
 
 /**
 * Gets the author of a collection in the atomicassets contract
-* 
-* It is assumed that the specifeid owner is guaranteed to own the specifeid asset id
 */
-name atomicmarket::get_collection_author(uint64_t asset_id, name asset_owner) {
-    atomicassets::assets_t owner_assets = atomicassets::get_assets(asset_owner);
-    auto asset_itr = owner_assets.require_find(asset_id);
-
-    auto collection_itr = atomicassets::collections.find(asset_itr->collection_name.value);
+name atomicmarket::get_collection_author(name collection_name) {
+    auto collection_itr = atomicassets::collections.find(collection_name.value);
     return collection_itr->author;
 }
 

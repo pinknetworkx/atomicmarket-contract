@@ -211,6 +211,7 @@ private:
         asset                   listing_price;
         symbol                  settlement_symbol;
         name                    maker_marketplace;
+        name                    collection_name;
         double                  collection_fee;
 
         uint64_t primary_key() const { return sale_id; };
@@ -233,8 +234,8 @@ private:
         bool                    claimed_by_buyer;
         name                    maker_marketplace;
         name                    taker_marketplace;
+        name                    collection_name;
         double                  collection_fee;
-        name                    collection_author;
 
         uint64_t primary_key() const { return auction_id; };
         checksum256 asset_ids_hash() const { return hash_asset_ids(asset_ids); };
@@ -291,7 +292,7 @@ private:
     bool is_valid_marketplace(name marketplace);
 
 
-    name get_collection_author(uint64_t asset_id, name asset_owner);
+    name get_collection_author(name collection_name);
 
     double get_collection_fee(uint64_t asset_id, name asset_owner);
 
