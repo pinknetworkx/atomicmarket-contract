@@ -892,7 +892,7 @@ void atomicmarket::receive_asset_offer(
             );
 
             check(sale_itr != sales_by_hash.end() && are_assets_equal,
-                "No sale was announced by this sender for the oferred assets");
+                "No sale was announced by this sender for the offered assets");
 
             if (sale_itr->seller == sender) {
                 break;
