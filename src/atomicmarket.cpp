@@ -684,10 +684,10 @@ ACTION atomicmarket::auctclaimbuy(
 ) {
     auto auction_itr = auctions.require_find(auction_id,
         "No auction with this auction_id exists");
-    
-    require_auth(auction_itr->current_bidder);
 
     check(auction_itr->assets_transferred, "The auction is not active");
+    
+    require_auth(auction_itr->current_bidder);
 
     check(auction_itr->end_time < current_time_point().sec_since_epoch(),
         "The auction is not finished yet");
