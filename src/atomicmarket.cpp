@@ -474,6 +474,8 @@ ACTION atomicmarket::announceauct(
 ) {
     require_auth(seller);
 
+    check(asset_ids.size() != 0, "asset_ids needs to contain at least one id");
+    
 
     atomicassets::assets_t seller_assets = atomicassets::get_assets(seller);
 
