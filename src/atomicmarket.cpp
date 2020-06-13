@@ -634,7 +634,7 @@ ACTION atomicmarket::auctionbid(
         "The auction is not yet active. The seller first needs to transfer the asset to the atomicmarket account");
 
     check(current_time_point().sec_since_epoch() < auction_itr->end_time,
-        "The auction is already finsihed");
+        "The auction is already finished");
 
     check(bid.symbol == auction_itr->current_bid.symbol,
         "The bid uses a different symbol than the current auction bid");
