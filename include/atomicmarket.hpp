@@ -171,6 +171,14 @@ public:
         name maker_marketplace
     );
 
+    ACTION logsalestart(
+        uint64_t sale_id,
+        uint64_t offer_id
+    );
+
+    ACTION logauctstart(
+        uint64_t auction_id
+    );
 private:
     struct TOKEN {
         name token_contract;

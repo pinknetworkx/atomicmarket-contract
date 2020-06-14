@@ -867,6 +867,15 @@ void atomicmarket::receive_asset_transfer(
             _auction.assets_transferred = true;
         });
 
+        action(
+            permission_level{get_self(), name("active")},
+            get_self(),
+            name("logauctstart"),
+            make_tuple(
+                auction_itr->auction_id
+            )
+        ).send();
+
     } else {
         check(false, "Invalid memo");
     }
@@ -922,6 +931,16 @@ void atomicmarket::receive_asset_offer(
             _sale.offer_id = offer_id;
         });
 
+        action(
+            permission_level{get_self(), name("active")},
+            get_self(),
+            name("logauctstart"),
+            make_tuple(
+                sale_itr->sale_id,
+                offer_id
+            )
+        ).send();
+
     } else {
         check(false, "Invalid memo");
     }
@@ -954,6 +973,19 @@ ACTION atomicmarket::lognewauct(
     require_auth(get_self());
 
     require_recipient(seller);
+}
+
+ACTION atomicmarket::logsalestart(
+    uint64_t sale_id,
+    uint64_t offer_id
+) {
+    require_auth(get_self());
+}
+
+ACTION atomicmarket::logauctstart(
+    uint64_t auction_id
+) {
+    require_auth(get_self());
 }
 
 
