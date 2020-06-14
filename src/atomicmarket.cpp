@@ -12,7 +12,7 @@ ACTION atomicmarket::init() {
     require_auth(get_self());
     config.get_or_create(get_self(), config_s{});
 
-    if (marketplaces.find(name("default").value) == marketplaces.end()) {
+    if (marketplaces.find(name("").value) == marketplaces.end()) {
         marketplaces.emplace(get_self(), [&](auto &_marketplace) {
             _marketplace.marketplace_name = name("");
             _marketplace.creator = DEFAULT_MARKETPLACE_CREATOR;
