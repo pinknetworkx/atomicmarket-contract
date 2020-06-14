@@ -16,6 +16,7 @@ using namespace std;
 
 
 namespace atomicassets {
+    static constexpr double MAX_MARKET_FEE = 0.15;
 
     static constexpr name ATOMICASSETS_ACCOUNT = name("atomicassets");
 

@@ -281,6 +281,9 @@ ACTION atomicmarket::announcesale(
 
     check(is_valid_marketplace(maker_marketplace), "The maker marketplace is not a valid marketplace");
 
+    double collection_fee = get_collection_fee(asset_ids[0], seller);
+    check(collection_fee <= atomicassets::MAX_MARKET_FEE,
+        "The collection fee is too high. This should have been prevented by the atomicassets contract");
 
     config_s current_config = config.get();
     uint64_t sale_id = current_config.sale_counter++;
@@ -295,7 +298,7 @@ ACTION atomicmarket::announcesale(
         _sale.settlement_symbol = settlement_symbol;
         _sale.maker_marketplace = maker_marketplace;
         _sale.collection_name = assets_collection_name;
-        _sale.collection_fee = get_collection_fee(asset_ids[0], seller);
+        _sale.collection_fee = collection_fee;
     });
 
 
@@ -309,7 +312,9 @@ ACTION atomicmarket::announcesale(
             asset_ids,
             listing_price,
             settlement_symbol,
-            maker_marketplace
+            maker_marketplace,
+            assets_collection_name,
+            collection_fee
         )
     ).send();
 }
@@ -540,6 +545,10 @@ ACTION atomicmarket::announceauct(
 
     check(is_valid_marketplace(maker_marketplace), "The maker marketplace is not a valid marketplace");
 
+    double collection_fee = get_collection_fee(asset_ids[0], seller);
+    check(collection_fee <= atomicassets::MAX_MARKET_FEE,
+        "The collection fee is too high. This should have been prevented by the atomicassets contract");
+
     config_s current_config = config.get();
     check(duration <= current_config.maximum_auction_duration,
         "The specified duration is longer than the maximum auction duration");
@@ -561,7 +570,7 @@ ACTION atomicmarket::announceauct(
         _auction.maker_marketplace = maker_marketplace;
         _auction.taker_marketplace = name("");
         _auction.collection_name = assets_collection_name;
-        _auction.collection_fee = get_collection_fee(asset_ids[0], seller);
+        _auction.collection_fee = collection_fee;
     });
 
 
@@ -575,7 +584,10 @@ ACTION atomicmarket::announceauct(
             asset_ids,
             starting_bid,
             duration,
-            maker_marketplace
+            current_time_point().sec_since_epoch() + duration,
+            maker_marketplace,
+            assets_collection_name,
+            collection_fee
         )
     ).send();
 }
@@ -955,7 +967,9 @@ ACTION atomicmarket::lognewsale(
     vector<uint64_t> asset_ids,
     asset listing_price,
     symbol settlement_symbol,
-    name maker_marketplace
+    name maker_marketplace,
+    name collection_name,
+    double collection_fee
 ) {
     require_auth(get_self());
 
@@ -968,7 +982,10 @@ ACTION atomicmarket::lognewauct(
     vector<uint64_t> asset_ids,
     asset starting_bid,
     uint32_t duration,
-    name maker_marketplace
+    uint32_t end_time,
+    name maker_marketplace,
+    name collection_name,
+    double collection_fee
 ) {
     require_auth(get_self());
 

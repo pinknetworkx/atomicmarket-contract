@@ -159,7 +159,9 @@ public:
         vector<uint64_t> asset_ids,
         asset listing_price,
         symbol settlement_symbol,
-        name maker_marketplace
+        name maker_marketplace,
+        name collection_name,
+        double collection_fee
     );
 
     ACTION lognewauct(
@@ -168,7 +170,10 @@ public:
         vector<uint64_t> asset_ids,
         asset starting_bid,
         uint32_t duration,
-        name maker_marketplace
+        uint32_t end_time,
+        name maker_marketplace,
+        name collection_name,
+        double collection_fee
     );
 
     ACTION logsalestart(
@@ -324,7 +329,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
             (announcesale)(cancelsale)(purchasesale) \
             (announceauct)(cancelauct)(auctionbid)(auctclaimbuy)(auctclaimsel) \
             (paysaleram)(payauctram) \
-            (lognewsale)(lognewauct))
+            (lognewsale)(lognewauct)(logsalestart)(logauctstart))
         }
     } else if (code == atomicassets::ATOMICASSETS_ACCOUNT.value && action == name("transfer").value) {
         eosio::execute_action(name(receiver), name(code), &atomicmarket::receive_asset_transfer);
