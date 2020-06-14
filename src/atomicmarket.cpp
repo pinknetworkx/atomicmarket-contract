@@ -957,32 +957,13 @@ ACTION atomicmarket::lognewauct(
 }
 
 
-ACTION atomicmarket::logincbal(
-    name user,
-    asset balance_increase,
-    string reason
-) {
-    require_auth(get_self());
-};
-
-
-ACTION atomicmarket::logdecbal(
-    name user,
-    asset balance_decrease,
-    string reason
-) {
-    require_auth(get_self());
-};
-
-
-
 
 /**
 * Checks if the provided marketplace is a valid marketplace
-* A marketplace is valid either if it is empty ("") or if is in the marketplaces table
+* A marketplace is valid if is in the marketplaces table
 */
 bool atomicmarket::is_valid_marketplace(name marketplace) {
-    return (marketplace == name("") || marketplaces.find(marketplace.value) != marketplaces.end());
+    return (marketplaces.find(marketplace.value) != marketplaces.end());
 }
 
 
@@ -1201,17 +1182,6 @@ void atomicmarket::internal_add_balance(
             _balance.quantities = quantities;
         });
     }
-
-    action(
-        permission_level{get_self(), name("active")},
-        get_self(),
-        name("logincbal"),
-        make_tuple(
-            owner,
-            quantity,
-            reason
-        )
-    ).send();
 }
 
 
@@ -1253,17 +1223,6 @@ void atomicmarket::internal_decrease_balance(
     } else {
         balances.erase(balance_itr);
     }
-
-    action(
-        permission_level{get_self(), name("active")},
-        get_self(),
-        name("logdecbal"),
-        make_tuple(
-            owner,
-            quantity,
-            reason
-        )
-    ).send();
 }
 
 

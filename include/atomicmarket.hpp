@@ -172,18 +172,6 @@ public:
         name maker_marketplace
     );
 
-    ACTION logincbal(
-        name user,
-        asset balance_increase,
-        string reason
-    );
-
-    ACTION logdecbal(
-        name user,
-        asset balance_decrease,
-        string reason
-    );
-
 private:
     struct TOKEN {
         name token_contract;
@@ -329,7 +317,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
             (announcesale)(cancelsale)(purchasesale) \
             (announceauct)(cancelauct)(auctionbid)(auctclaimbuy)(auctclaimsel) \
             (paysaleram)(payauctram) \
-            (logincbal)(logdecbal)(lognewsale)(lognewauct))
+            (lognewsale)(lognewauct))
         }
     } else if (code == atomicassets::ATOMICASSETS_ACCOUNT.value && action == name("transfer").value) {
         eosio::execute_action(name(receiver), name(code), &atomicmarket::receive_asset_transfer);
