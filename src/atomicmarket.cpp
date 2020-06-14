@@ -946,7 +946,7 @@ void atomicmarket::receive_asset_offer(
         action(
             permission_level{get_self(), name("active")},
             get_self(),
-            name("logauctstart"),
+            name("logsalestart"),
             make_tuple(
                 sale_itr->sale_id,
                 offer_id
