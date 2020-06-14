@@ -37,6 +37,21 @@ ACTION atomicmarket::setminbidinc(double minimum_bid_increase) {
 
 
 /**
+*  Sets the version for the config table
+* 
+*  @required_auth The contract itself
+*/
+ACTION atomicmarket::setversion(string new_version) {
+    require_auth(get_self());
+
+    config_s current_config = config.get();
+    current_config.version = new_version;
+
+    config.set(current_config, get_self());
+}
+
+
+/**
 *  Adds a token that can be used to sell assets for
 * 
 *  @required_auth The contract itself

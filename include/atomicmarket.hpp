@@ -38,6 +38,10 @@ public:
         double minimum_bid_increase
     );
 
+    ACTION setversion(
+        string new_version
+    );
+
     ACTION addconftoken(
         name token_contract,
         symbol token_symbol
@@ -255,6 +259,7 @@ private:
 
 
     TABLE config_s{
+        string                  version = "0.0.0";
         uint64_t                sale_counter = 1;
         uint64_t                auction_counter = 1;
         double                  minimum_bid_increase = 0.1;
