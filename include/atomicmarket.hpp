@@ -10,7 +10,6 @@
 using namespace std;
 using namespace eosio;
 
-static constexpr name DEFAULT_MARKETPLACE_NAME = name("default");
 static constexpr name DEFAULT_MARKETPLACE_CREATOR = name("pink.network");
 
 

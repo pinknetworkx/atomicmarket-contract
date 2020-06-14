@@ -14,7 +14,7 @@ ACTION atomicmarket::init() {
 
     if (marketplaces.find(name("default").value) == marketplaces.end()) {
         marketplaces.emplace(get_self(), [&](auto &_marketplace) {
-            _marketplace.marketplace_name = DEFAULT_MARKETPLACE_NAME;
+            _marketplace.marketplace_name = name("");
             _marketplace.creator = DEFAULT_MARKETPLACE_CREATOR;
         });
     }
@@ -293,7 +293,7 @@ ACTION atomicmarket::announcesale(
         _sale.offer_id = -1;
         _sale.listing_price = listing_price;
         _sale.settlement_symbol = settlement_symbol;
-        _sale.maker_marketplace = maker_marketplace != name("") ? maker_marketplace : DEFAULT_MARKETPLACE_NAME;
+        _sale.maker_marketplace = maker_marketplace;
         _sale.collection_name = assets_collection_name;
         _sale.collection_fee = get_collection_fee(asset_ids[0], seller);
     });
@@ -309,7 +309,7 @@ ACTION atomicmarket::announcesale(
             asset_ids,
             listing_price,
             settlement_symbol,
-            maker_marketplace != name("") ? maker_marketplace : DEFAULT_MARKETPLACE_NAME
+            maker_marketplace
         )
     ).send();
 }
@@ -453,7 +453,7 @@ ACTION atomicmarket::purchasesale(
         sale_price,
         sale_itr->seller,
         sale_itr->maker_marketplace,
-        taker_marketplace != name("") ? taker_marketplace : DEFAULT_MARKETPLACE_NAME,
+        taker_marketplace,
         get_collection_author(sale_itr->collection_name),
         sale_itr->collection_fee
     );
@@ -558,7 +558,7 @@ ACTION atomicmarket::announceauct(
         _auction.current_bidder = name("");
         _auction.claimed_by_seller = false;
         _auction.claimed_by_buyer = false;
-        _auction.maker_marketplace = maker_marketplace != name("") ? maker_marketplace : DEFAULT_MARKETPLACE_NAME;
+        _auction.maker_marketplace = maker_marketplace;
         _auction.taker_marketplace = name("");
         _auction.collection_name = assets_collection_name;
         _auction.collection_fee = get_collection_fee(asset_ids[0], seller);
@@ -575,7 +575,7 @@ ACTION atomicmarket::announceauct(
             asset_ids,
             starting_bid,
             duration,
-            maker_marketplace != name("") ? maker_marketplace : DEFAULT_MARKETPLACE_NAME
+            maker_marketplace
         )
     ).send();
 }
@@ -684,7 +684,7 @@ ACTION atomicmarket::auctionbid(
     auctions.modify(auction_itr, same_payer, [&](auto &_auction) {
         _auction.current_bid = bid;
         _auction.current_bidder = bidder;
-        _auction.taker_marketplace = taker_marketplace != name("") ? taker_marketplace : DEFAULT_MARKETPLACE_NAME;
+        _auction.taker_marketplace = taker_marketplace;
     });
 }
 
