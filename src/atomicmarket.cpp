@@ -258,11 +258,8 @@ ACTION atomicmarket::announcesale(
     
     auto sales_by_hash = sales.get_index<name("assetidshash")>();
     auto sale_itr = sales_by_hash.find(asset_ids_hash);
+
     while (sale_itr != sales_by_hash.end()) {
-        check(sale_itr->seller != seller,
-        "You have already announced a sale for these assets. You can cancel a sale using the cancelsale action.");
-        
-        sale_itr++;
 
         bool are_assets_equal = std::is_permutation(
             sale_itr->asset_ids.begin(),
@@ -273,6 +270,11 @@ ACTION atomicmarket::announcesale(
         if (!are_assets_equal) {
             break;
         }
+
+        check(sale_itr->seller != seller,
+        "You have already announced a sale for these assets. You can cancel a sale using the cancelsale action.");
+        
+        sale_itr++;
     }
     
 
@@ -537,10 +539,6 @@ ACTION atomicmarket::announceauct(
     auto auction_itr = auctions_by_hash.find(asset_ids_hash);
 
     while (auction_itr != auctions_by_hash.end()) {
-        check(auction_itr->seller != seller,
-        "You have already announced an auction for these assets. You can cancel an auction using the cancelauct action.");
-
-        auction_itr++;
 
         bool are_assets_equal = std::is_permutation(
             auction_itr->asset_ids.begin(),
@@ -551,6 +549,11 @@ ACTION atomicmarket::announceauct(
         if (!are_assets_equal) {
             break;
         }
+
+        check(auction_itr->seller != seller,
+        "You have already announced an auction for these assets. You can cancel an auction using the cancelauct action.");
+
+        auction_itr++;
     }
 
 
@@ -872,6 +875,9 @@ void atomicmarket::receive_asset_transfer(
         auto auction_itr = auctions_by_hash.find(asset_ids_hash);
 
         while (true) {
+            check(auction_itr != auctions_by_hash.end(),
+                "No announced, non-finished auction by the sender for these assets exists");
+
             bool are_assets_equal = std::is_permutation(
                 auction_itr->asset_ids.begin(),
                 auction_itr->asset_ids.end(),
@@ -879,7 +885,7 @@ void atomicmarket::receive_asset_transfer(
                 asset_ids.end()
             );
 
-            check(auction_itr != auctions_by_hash.end() && are_assets_equal,
+            check(are_assets_equal,
                 "No announced, non-finished auction by the sender for these assets exists");
 
             if (auction_itr->seller == from && current_time_point().sec_since_epoch() < auction_itr->end_time) {
@@ -934,6 +940,9 @@ void atomicmarket::receive_asset_offer(
         auto sale_itr = sales_by_hash.find(asset_ids_hash);
 
         while (true) {
+            check(sale_itr != sales_by_hash.end(),
+                "No sale was announced by this sender for the offered assets");
+            
             bool are_assets_equal = std::is_permutation(
                 sale_itr->asset_ids.begin(),
                 sale_itr->asset_ids.end(),
@@ -941,7 +950,7 @@ void atomicmarket::receive_asset_offer(
                 sender_asset_ids.end()
             );
 
-            check(sale_itr != sales_by_hash.end() && are_assets_equal,
+            check(are_assets_equal,
                 "No sale was announced by this sender for the offered assets");
 
             if (sale_itr->seller == sender) {
