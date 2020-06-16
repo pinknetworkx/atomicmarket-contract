@@ -263,7 +263,14 @@ ACTION atomicmarket::announcesale(
         "You have already announced a sale for these assets. You can cancel a sale using the cancelsale action.");
         
         sale_itr++;
-        if (sale_itr->asset_ids != asset_ids) {
+
+        bool are_assets_equal = std::is_permutation(
+            sale_itr->asset_ids.begin(),
+            sale_itr->asset_ids.end(),
+            asset_ids.begin(),
+            asset_ids.end()
+        );
+        if (!are_assets_equal) {
             break;
         }
     }
@@ -534,7 +541,14 @@ ACTION atomicmarket::announceauct(
         "You have already announced an auction for these assets. You can cancel an auction using the cancelauct action.");
 
         auction_itr++;
-        if (auction_itr->asset_ids != asset_ids) {
+
+        bool are_assets_equal = std::is_permutation(
+            auction_itr->asset_ids.begin(),
+            auction_itr->asset_ids.end(),
+            asset_ids.begin(),
+            asset_ids.end()
+        );
+        if (!are_assets_equal) {
             break;
         }
     }
