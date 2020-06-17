@@ -561,6 +561,8 @@ ACTION atomicmarket::announceauct(
         "The collection fee is too high. This should have been prevented by the atomicassets contract");
 
     config_s current_config = config.get();
+    check(duration >= current_config.minimum_auction_duration,
+        "The specified duration is shorter than the minimum auction duration");
     check(duration <= current_config.maximum_auction_duration,
         "The specified duration is longer than the maximum auction duration");
 
@@ -707,6 +709,10 @@ ACTION atomicmarket::auctionbid(
         _auction.current_bid = bid;
         _auction.current_bidder = bidder;
         _auction.taker_marketplace = taker_marketplace;
+        _auction.end_time = std::max(
+            _auction.end_time,
+            current_time_point().sec_since_epoch() + current_config.auction_reset_duration
+        );
     });
 }
 

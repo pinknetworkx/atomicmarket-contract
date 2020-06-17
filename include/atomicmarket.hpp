@@ -270,7 +270,9 @@ private:
         uint64_t            sale_counter             = 1;
         uint64_t            auction_counter          = 1;
         double              minimum_bid_increase     = 0.1;
+        uint32_t            minimum_auction_duration = 120; //2 minutes
         uint32_t            maximum_auction_duration = 2592000; //30 days
+        uint32_t            auction_reset_duration   = 120; //2 minutes
         vector <TOKEN>      supported_tokens         = {};
         vector <SYMBOLPAIR> supported_symbol_pairs   = {};
         double              maker_market_fee         = 0.01;
