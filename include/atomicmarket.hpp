@@ -18,12 +18,12 @@ static constexpr name DEFAULT_MARKETPLACE_CREATOR = name("pink.network");
 * It should therefore return the same hash for two vectors if and only if both vectors include
 * exactly the same asset ids in any order
 */
-checksum256 hash_asset_ids(const vector<uint64_t> &asset_ids) {
+checksum256 hash_asset_ids(const vector <uint64_t> &asset_ids) {
     uint64_t asset_ids_array[asset_ids.size()];
     std::copy(asset_ids.begin(), asset_ids.end(), asset_ids_array);
     std::sort(asset_ids_array, asset_ids_array + asset_ids.size());
 
-    return eosio::sha256((char*) asset_ids_array, sizeof(asset_ids_array));
+    return eosio::sha256((char *) asset_ids_array, sizeof(asset_ids_array));
 };
 
 
@@ -73,7 +73,7 @@ public:
 
     ACTION announcesale(
         name seller,
-        vector<uint64_t> asset_ids,
+        vector <uint64_t> asset_ids,
         asset listing_price,
         symbol settlement_symbol,
         name maker_marketplace
@@ -93,7 +93,7 @@ public:
 
     ACTION announceauct(
         name seller,
-        vector<uint64_t> asset_ids,
+        vector <uint64_t> asset_ids,
         asset starting_bid,
         uint32_t duration,
         name maker_marketplace
@@ -156,7 +156,7 @@ public:
     ACTION lognewsale(
         uint64_t sale_id,
         name seller,
-        vector<uint64_t> asset_ids,
+        vector <uint64_t> asset_ids,
         asset listing_price,
         symbol settlement_symbol,
         name maker_marketplace,
@@ -167,7 +167,7 @@ public:
     ACTION lognewauct(
         uint64_t auction_id,
         name seller,
-        vector<uint64_t> asset_ids,
+        vector <uint64_t> asset_ids,
         asset starting_bid,
         uint32_t duration,
         uint32_t end_time,
@@ -184,103 +184,110 @@ public:
     ACTION logauctstart(
         uint64_t auction_id
     );
+
 private:
     struct TOKEN {
-        name token_contract;
+        name   token_contract;
         symbol token_symbol;
     };
 
     struct SYMBOLPAIR {
         symbol listing_symbol;
         symbol settlement_symbol;
-        name delphi_pair_name;
-        bool invert_delphi_pair;
+        name   delphi_pair_name;
+        bool   invert_delphi_pair;
     };
 
 
-    TABLE balances_s{
-        name                    owner;
-        vector<asset>           quantities;
+    TABLE balances_s {
+        name           owner;
+        vector <asset> quantities;
 
         uint64_t primary_key() const { return owner.value; };
     };
-    typedef multi_index<name("balances"), balances_s> balances_t;
+
+    typedef multi_index <name("balances"), balances_s> balances_t;
 
 
-    TABLE sales_s{
-        uint64_t                sale_id;
-        name                    seller;
-        vector<uint64_t>        asset_ids;
-        int64_t                 offer_id; //-1 if no offer has been created yet, else the offer id
-        asset                   listing_price;
-        symbol                  settlement_symbol;
-        name                    maker_marketplace;
-        name                    collection_name;
-        double                  collection_fee;
+    TABLE sales_s {
+        uint64_t          sale_id;
+        name              seller;
+        vector <uint64_t> asset_ids;
+        int64_t           offer_id; //-1 if no offer has been created yet, else the offer id
+        asset             listing_price;
+        symbol            settlement_symbol;
+        name              maker_marketplace;
+        name              collection_name;
+        double            collection_fee;
 
         uint64_t primary_key() const { return sale_id; };
+
         checksum256 asset_ids_hash() const { return hash_asset_ids(asset_ids); };
     };
-    typedef multi_index<name("sales"), sales_s,
-    indexed_by < name("assetidshash"), const_mem_fun < sales_s, checksum256, &sales_s::asset_ids_hash>>>
+
+    typedef multi_index <name("sales"), sales_s,
+        indexed_by < name("assetidshash"), const_mem_fun < sales_s, checksum256, &sales_s::asset_ids_hash>>>
     sales_t;
 
 
-    TABLE auctions_s{
-        uint64_t                auction_id;
-        name                    seller;
-        vector<uint64_t>        asset_ids;
-        uint32_t                end_time;   //seconds since epoch
-        bool                    assets_transferred;
-        asset                   current_bid;
-        name                    current_bidder;
-        bool                    claimed_by_seller;
-        bool                    claimed_by_buyer;
-        name                    maker_marketplace;
-        name                    taker_marketplace;
-        name                    collection_name;
-        double                  collection_fee;
+    TABLE auctions_s {
+        uint64_t          auction_id;
+        name              seller;
+        vector <uint64_t> asset_ids;
+        uint32_t          end_time;   //seconds since epoch
+        bool              assets_transferred;
+        asset             current_bid;
+        name              current_bidder;
+        bool              claimed_by_seller;
+        bool              claimed_by_buyer;
+        name              maker_marketplace;
+        name              taker_marketplace;
+        name              collection_name;
+        double            collection_fee;
 
         uint64_t primary_key() const { return auction_id; };
+
         checksum256 asset_ids_hash() const { return hash_asset_ids(asset_ids); };
     };
-    typedef multi_index<name("auctions"), auctions_s,
-    indexed_by < name("assetidshash"), const_mem_fun < auctions_s, checksum256, &auctions_s::asset_ids_hash>>>
+
+    typedef multi_index <name("auctions"), auctions_s,
+        indexed_by < name("assetidshash"), const_mem_fun < auctions_s, checksum256, &auctions_s::asset_ids_hash>>>
     auctions_t;
 
 
-    TABLE marketplaces_s{
-        name                    marketplace_name;
-        name                    creator;
+    TABLE marketplaces_s {
+        name marketplace_name;
+        name creator;
 
         uint64_t primary_key() const { return marketplace_name.value; };
     };
-    typedef multi_index<name("marketplaces"), marketplaces_s> marketplaces_t;
+
+    typedef multi_index <name("marketplaces"), marketplaces_s> marketplaces_t;
 
 
-    TABLE config_s{
-        string                  version = "0.0.0";
-        uint64_t                sale_counter = 1;
-        uint64_t                auction_counter = 1;
-        double                  minimum_bid_increase = 0.1;
-        uint32_t                maximum_auction_duration = 2592000; //30 days
-        vector<TOKEN>           supported_tokens = {};
-        vector<SYMBOLPAIR>      supported_symbol_pairs = {};
-        double                  maker_market_fee = 0.01;
-        double                  taker_market_fee = 0.01;
-        name                    atomicassets_account = atomicassets::ATOMICASSETS_ACCOUNT;
-        name                    delphioracle_account = delphioracle::DELPHIORACLE_ACCOUNT;
+    TABLE config_s {
+        string              version                  = "0.0.0";
+        uint64_t            sale_counter             = 1;
+        uint64_t            auction_counter          = 1;
+        double              minimum_bid_increase     = 0.1;
+        uint32_t            maximum_auction_duration = 2592000; //30 days
+        vector <TOKEN>      supported_tokens         = {};
+        vector <SYMBOLPAIR> supported_symbol_pairs   = {};
+        double              maker_market_fee         = 0.01;
+        double              taker_market_fee         = 0.01;
+        name                atomicassets_account     = atomicassets::ATOMICASSETS_ACCOUNT;
+        name                delphioracle_account     = delphioracle::DELPHIORACLE_ACCOUNT;
     };
-    typedef singleton<name("config"), config_s> config_t;
+    typedef singleton <name("config"), config_s>               config_t;
     // https://github.com/EOSIO/eosio.cdt/issues/280
-    typedef multi_index<name("config"), config_s> config_t_for_abi;
+    typedef multi_index <name("config"), config_s>             config_t_for_abi;
 
 
-    sales_t sales = sales_t(get_self(), get_self().value);
-    auctions_t auctions = auctions_t(get_self(), get_self().value);
-    balances_t balances = balances_t(get_self(), get_self().value);
+    sales_t        sales        = sales_t(get_self(), get_self().value);
+    auctions_t     auctions     = auctions_t(get_self(), get_self().value);
+    balances_t     balances     = balances_t(get_self(), get_self().value);
     marketplaces_t marketplaces = marketplaces_t(get_self(), get_self().value);
-    config_t config = config_t(get_self(), get_self().value);
+    config_t       config       = config_t(get_self(), get_self().value);
 
 
     name require_get_supported_token_contract(symbol token_symbol);
@@ -315,7 +322,7 @@ private:
 
     void internal_decrease_balance(name owner, asset quantity, string reason);
 
-    void internal_transfer_assets(name to, vector<uint64_t> asset_ids, string memo);
+    void internal_transfer_assets(name to, vector <uint64_t> asset_ids, string memo);
 
 };
 

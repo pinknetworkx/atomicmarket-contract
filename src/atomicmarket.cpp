@@ -111,7 +111,7 @@ ACTION atomicmarket::adddelphi(
 
 
     config_s current_config = config.get();
-    
+
     current_config.supported_symbol_pairs.push_back({
         .listing_symbol = listing_symbol,
         .settlement_symbol = settlement_symbol,
@@ -143,8 +143,6 @@ ACTION atomicmarket::setmarketfee(double maker_market_fee, double taker_market_f
 }
 
 
-
-
 /**
 * Registers a marketplace that can then be used in the maker_marketplace / taker_marketplace parameters
 * 
@@ -174,8 +172,6 @@ ACTION atomicmarket::regmarket(
         _marketplace.creator = creator;
     });
 }
-
-
 
 
 /**
@@ -210,8 +206,6 @@ ACTION atomicmarket::withdraw(
 }
 
 
-
-
 /**
 * Create a sale listing
 * For the sale to become active, the seller needs to create an atomicassets offer from them to the atomicmarket
@@ -221,7 +215,7 @@ ACTION atomicmarket::withdraw(
 */
 ACTION atomicmarket::announcesale(
     name seller,
-    vector<uint64_t> asset_ids,
+    vector <uint64_t> asset_ids,
     asset listing_price,
     symbol settlement_symbol,
     name maker_marketplace
@@ -237,7 +231,7 @@ ACTION atomicmarket::announcesale(
     for (uint64_t asset_id : asset_ids) {
         auto asset_itr = seller_assets.require_find(asset_id,
             ("You do not own at least one of the assets - " + to_string(asset_id)).c_str());
-        
+
         if (asset_itr->template_id != -1) {
             atomicassets::templates_t asset_template = atomicassets::get_templates(asset_itr->collection_name);
             auto template_itr = asset_template.find(asset_itr->template_id);
@@ -255,8 +249,8 @@ ACTION atomicmarket::announcesale(
 
 
     checksum256 asset_ids_hash = hash_asset_ids(asset_ids);
-    
-    auto sales_by_hash = sales.get_index<name("assetidshash")>();
+
+    auto sales_by_hash = sales.get_index <name("assetidshash")>();
     auto sale_itr = sales_by_hash.find(asset_ids_hash);
 
     while (sale_itr != sales_by_hash.end()) {
@@ -272,11 +266,11 @@ ACTION atomicmarket::announcesale(
         }
 
         check(sale_itr->seller != seller,
-        "You have already announced a sale for these assets. You can cancel a sale using the cancelsale action.");
-        
+            "You have already announced a sale for these assets. You can cancel a sale using the cancelsale action.");
+
         sale_itr++;
     }
-    
+
 
     if (listing_price.symbol == settlement_symbol) {
         check(is_symbol_supported(listing_price.symbol), "The specified listing symbol is not supported.");
@@ -342,7 +336,7 @@ ACTION atomicmarket::cancelsale(
 ) {
     auto sale_itr = sales.require_find(sale_id,
         "No sale with this sale_id exists");
-    
+
 
     bool is_sale_invalid = false;
 
@@ -362,7 +356,7 @@ ACTION atomicmarket::cancelsale(
 
     check(is_sale_invalid || has_auth(sale_itr->seller),
         "The sale is not invalid, therefore the authorization of the seller is needed to cancel it");
-    
+
 
     if (sale_itr->offer_id != -1) {
         if (atomicassets::offers.find(sale_itr->offer_id) != atomicassets::offers.end()) {
@@ -400,7 +394,7 @@ ACTION atomicmarket::purchasesale(
 
     auto sale_itr = sales.require_find(sale_id,
         "No sale with this sale_id exists");
-    
+
     check(buyer != sale_itr->seller, "You can't purchase your own sale");
 
     check(sale_itr->offer_id != -1,
@@ -408,7 +402,7 @@ ACTION atomicmarket::purchasesale(
 
     check(atomicassets::offers.find(sale_itr->offer_id) != atomicassets::offers.end(),
         "The seller cancelled the atomicassets offer related to this sale");
-    
+
     check(is_valid_marketplace(taker_marketplace), "The taker marketplace is not a valid marketplace");
 
 
@@ -443,15 +437,17 @@ ACTION atomicmarket::purchasesale(
         if (!symbol_pair.invert_delphi_pair) {
             //Normal
             settlement_price_amount = (double) sale_itr->listing_price.amount / (double) intended_delphi_median * pow(
-                10, pair_itr->quoted_precision + sale_itr->settlement_symbol.precision() - sale_itr->listing_price.symbol.precision()
+                10, pair_itr->quoted_precision + sale_itr->settlement_symbol.precision() -
+                    sale_itr->listing_price.symbol.precision()
             );
         } else {
             //Inverted
             settlement_price_amount = sale_itr->listing_price.amount * intended_delphi_median * pow(
-                10, -pair_itr->quoted_precision + sale_itr->settlement_symbol.precision() - sale_itr->listing_price.symbol.precision()
+                10, -pair_itr->quoted_precision + sale_itr->settlement_symbol.precision() -
+                    sale_itr->listing_price.symbol.precision()
             );
         }
-        
+
         sale_price = asset(settlement_price_amount, sale_itr->settlement_symbol);
 
     }
@@ -487,8 +483,6 @@ ACTION atomicmarket::purchasesale(
 }
 
 
-
-
 /**
 * Create an auction listing
 * For the auction to become active, the seller needs to use the atomicassets transfer action to transfer the assets
@@ -500,7 +494,7 @@ ACTION atomicmarket::purchasesale(
 */
 ACTION atomicmarket::announceauct(
     name seller,
-    vector<uint64_t> asset_ids,
+    vector <uint64_t> asset_ids,
     asset starting_bid,
     uint32_t duration,
     name maker_marketplace
@@ -508,7 +502,7 @@ ACTION atomicmarket::announceauct(
     require_auth(seller);
 
     check(asset_ids.size() != 0, "asset_ids needs to contain at least one id");
-    
+
 
     atomicassets::assets_t seller_assets = atomicassets::get_assets(seller);
 
@@ -516,7 +510,7 @@ ACTION atomicmarket::announceauct(
     for (uint64_t asset_id : asset_ids) {
         auto asset_itr = seller_assets.require_find(asset_id,
             ("You do not own at least one of the assets - " + to_string(asset_id)).c_str());
-        
+
         if (asset_itr->template_id != -1) {
             atomicassets::templates_t asset_template = atomicassets::get_templates(asset_itr->collection_name);
             auto template_itr = asset_template.find(asset_itr->template_id);
@@ -534,8 +528,8 @@ ACTION atomicmarket::announceauct(
 
 
     checksum256 asset_ids_hash = hash_asset_ids(asset_ids);
-    
-    auto auctions_by_hash = auctions.get_index<name("assetidshash")>();
+
+    auto auctions_by_hash = auctions.get_index <name("assetidshash")>();
     auto auction_itr = auctions_by_hash.find(asset_ids_hash);
 
     while (auction_itr != auctions_by_hash.end()) {
@@ -551,7 +545,7 @@ ACTION atomicmarket::announceauct(
         }
 
         check(auction_itr->seller != seller,
-        "You have already announced an auction for these assets. You can cancel an auction using the cancelauct action.");
+            "You have already announced an auction for these assets. You can cancel an auction using the cancelauct action.");
 
         auction_itr++;
     }
@@ -569,7 +563,7 @@ ACTION atomicmarket::announceauct(
     config_s current_config = config.get();
     check(duration <= current_config.maximum_auction_duration,
         "The specified duration is longer than the maximum auction duration");
-    
+
     uint64_t auction_id = current_config.auction_counter++;
     config.set(current_config, get_self());
 
@@ -624,7 +618,7 @@ ACTION atomicmarket::cancelauct(
 ) {
     auto auction_itr = auctions.require_find(auction_id,
         "No auction with this auction_id exists");
-    
+
 
     bool is_auction_invalid = false;
 
@@ -640,7 +634,7 @@ ACTION atomicmarket::cancelauct(
 
     check(is_auction_invalid || has_auth(auction_itr->seller),
         "The auction is not invalid, therefore the authorization of the seller is needed to cancel it");
-    
+
 
     if (auction_itr->assets_transferred) {
         check(auction_itr->current_bidder == name(""),
@@ -651,7 +645,6 @@ ACTION atomicmarket::cancelauct(
 
     auctions.erase(auction_itr);
 }
-
 
 
 /**
@@ -733,7 +726,7 @@ ACTION atomicmarket::auctclaimbuy(
 
     check(auction_itr->current_bidder != name(""),
         "The auction does not have any bids");
-    
+
     require_auth(auction_itr->current_bidder);
 
     check(auction_itr->end_time < current_time_point().sec_since_epoch(),
@@ -767,7 +760,7 @@ ACTION atomicmarket::auctclaimsel(
 ) {
     auto auction_itr = auctions.require_find(auction_id,
         "No auction with this auction_id exists");
-    
+
     require_auth(auction_itr->seller);
 
     check(auction_itr->assets_transferred, "The auction is not active");
@@ -797,7 +790,6 @@ ACTION atomicmarket::auctclaimsel(
 }
 
 
-
 /**
 * Pays the RAM cost for an already existing sale
 */
@@ -809,7 +801,7 @@ ACTION atomicmarket::paysaleram(
 
     auto sale_itr = sales.require_find(sale_id,
         "No sale with this id exists");
-    
+
     sales.modify(sale_itr, payer, [&](auto &_offer) {
 
     });
@@ -827,13 +819,11 @@ ACTION atomicmarket::payauctram(
 
     auto auction_itr = auctions.require_find(auction_id,
         "No auction with this id exists");
-    
+
     auctions.modify(auction_itr, payer, [&](auto &_offer) {
 
     });
 }
-
-
 
 
 /**
@@ -871,7 +861,7 @@ void atomicmarket::receive_asset_transfer(
 
     if (memo == "auction") {
         checksum256 asset_ids_hash = hash_asset_ids(asset_ids);
-        auto auctions_by_hash = auctions.get_index<name("assetidshash")>();
+        auto auctions_by_hash = auctions.get_index <name("assetidshash")>();
         auto auction_itr = auctions_by_hash.find(asset_ids_hash);
 
         while (true) {
@@ -935,14 +925,14 @@ void atomicmarket::receive_asset_offer(
 
 
         checksum256 asset_ids_hash = hash_asset_ids(sender_asset_ids);
-        
-        auto sales_by_hash = sales.get_index<name("assetidshash")>();
+
+        auto sales_by_hash = sales.get_index <name("assetidshash")>();
         auto sale_itr = sales_by_hash.find(asset_ids_hash);
 
         while (true) {
             check(sale_itr != sales_by_hash.end(),
                 "No sale was announced by this sender for the offered assets");
-            
+
             bool are_assets_equal = std::is_permutation(
                 sale_itr->asset_ids.begin(),
                 sale_itr->asset_ids.end(),
@@ -982,12 +972,10 @@ void atomicmarket::receive_asset_offer(
 }
 
 
-
-
 ACTION atomicmarket::lognewsale(
     uint64_t sale_id,
     name seller,
-    vector<uint64_t> asset_ids,
+    vector <uint64_t> asset_ids,
     asset listing_price,
     symbol settlement_symbol,
     name maker_marketplace,
@@ -1002,7 +990,7 @@ ACTION atomicmarket::lognewsale(
 ACTION atomicmarket::lognewauct(
     uint64_t auction_id,
     name seller,
-    vector<uint64_t> asset_ids,
+    vector <uint64_t> asset_ids,
     asset starting_bid,
     uint32_t duration,
     uint32_t end_time,
@@ -1029,7 +1017,6 @@ ACTION atomicmarket::logauctstart(
 }
 
 
-
 /**
 * Checks if the provided marketplace is a valid marketplace
 * A marketplace is valid if is in the marketplaces table
@@ -1037,7 +1024,6 @@ ACTION atomicmarket::logauctstart(
 bool atomicmarket::is_valid_marketplace(name marketplace) {
     return (marketplaces.find(marketplace.value) != marketplaces.end());
 }
-
 
 
 /**
@@ -1063,7 +1049,6 @@ double atomicmarket::get_collection_fee(uint64_t asset_id, name asset_owner) {
 }
 
 
-
 /**
 * Gets the token_contract corresponding to the token_symbol from the config
 * Throws if there is no supported token with the specified token_symbol
@@ -1084,7 +1069,6 @@ name atomicmarket::require_get_supported_token_contract(
 }
 
 
-
 atomicmarket::SYMBOLPAIR atomicmarket::require_get_symbol_pair(
     symbol listing_symbol,
     symbol settlement_symbol
@@ -1100,8 +1084,6 @@ atomicmarket::SYMBOLPAIR atomicmarket::require_get_symbol_pair(
     check(false, "No symbol pair with the specified listing - settlement symbol combination exists");
     return {}; //To silence the compiler warning
 }
-
-
 
 
 /**
@@ -1152,8 +1134,6 @@ bool atomicmarket::is_symbol_pair_supported(
     }
     return false;
 }
-
-
 
 
 /**
@@ -1300,7 +1280,7 @@ void atomicmarket::internal_decrease_balance(
 
 void atomicmarket::internal_transfer_assets(
     name to,
-    vector<uint64_t> asset_ids,
+    vector <uint64_t> asset_ids,
     string memo
 ) {
 
