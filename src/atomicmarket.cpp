@@ -160,8 +160,20 @@ ACTION atomicmarket::regmarket(
 ) {
     require_auth(creator);
 
-    check(!is_account(marketplace_name) || has_auth(marketplace_name),
-        "Can't create a marketplace with a name of an existing account without its authorization");
+    name marketplace_name_suffix = marketplace_name.suffix();
+
+    if (is_account(marketplace_name)) {
+        check(has_auth(marketplace_name),
+            "When the marketplace has the name of an existing account, its authorization is required");
+    } else {
+        if (marketplace_name_suffix != marketplace_name) {
+            check(has_auth(marketplace_name_suffix),
+                "When the marketplace name has a suffix, the suffix authorization is required");
+        } else {
+            check(marketplace_name.length() == 12,
+                "Without special authorization, marketplace names must be 12 characters long");
+        }
+    }
 
     check(marketplaces.find(marketplace_name.value) == marketplaces.end(),
         "A marketplace with this name already exists");
