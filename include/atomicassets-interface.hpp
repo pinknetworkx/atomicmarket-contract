@@ -49,11 +49,6 @@ namespace atomicassets {
         string type;
     };
 
-    struct TOKEN {
-        name   token_contract;
-        symbol token_symbol;
-    };
-
     struct collections_s {
         name             collection_name;
         name             author;
@@ -82,7 +77,7 @@ namespace atomicassets {
 
     //Scope: collection_name
     struct templates_s {
-        uint32_t         template_id;
+        int32_t          template_id;
         name             schema_name;
         bool             transferable;
         bool             burnable;
@@ -90,7 +85,7 @@ namespace atomicassets {
         uint32_t         issued_supply;
         vector <uint8_t> immutable_serialized_data;
 
-        uint64_t primary_key() const { return uint64_t{template_id}; }
+        uint64_t primary_key() const { return (uint64_t) template_id; }
     };
 
     typedef multi_index <name("templates"), templates_s> templates_t;
@@ -120,6 +115,7 @@ namespace atomicassets {
         vector <uint64_t> sender_asset_ids;
         vector <uint64_t> recipient_asset_ids;
         string            memo;
+        name              ram_payer;
 
         uint64_t primary_key() const { return offer_id; };
 
@@ -144,11 +140,11 @@ namespace atomicassets {
 
 
     struct config_s {
-        uint64_t        asset_counter     = 1099511627780; //2^40
-        int32_t         template_counter  = 1;
-        uint64_t        offer_counter     = 1;
-        vector <FORMAT> collection_format = {};
-        vector <TOKEN>  supported_tokens  = {};
+        uint64_t                 asset_counter     = 1099511627776; //2^40
+        int32_t                  template_counter  = 1;
+        uint64_t                 offer_counter     = 1;
+        vector <FORMAT>          collection_format = {};
+        vector <extended_symbol> supported_tokens  = {};
     };
     typedef singleton <name("config"), config_s>             config_t;
 
