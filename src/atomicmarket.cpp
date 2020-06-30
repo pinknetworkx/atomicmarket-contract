@@ -749,6 +749,9 @@ ACTION atomicmarket::auctclaimbuy(
 
     check(auction_itr->end_time < current_time_point().sec_since_epoch(),
         "The auction is not finished yet");
+    
+    check(!auction_itr->claimed_by_buyer,
+        "The auction has already been claimed by the buyer");
 
     internal_transfer_assets(
         auction_itr->current_bidder,
@@ -788,6 +791,9 @@ ACTION atomicmarket::auctclaimsel(
 
     check(auction_itr->current_bidder != name(""),
         "The auction does not have any bids");
+    
+    check(!auction_itr->claimed_by_seller,
+        "The auction has already been claimed by the seller");
 
     internal_payout_sale(
         auction_itr->current_bid,
