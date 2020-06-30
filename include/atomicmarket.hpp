@@ -10,7 +10,7 @@
 using namespace std;
 using namespace eosio;
 
-static constexpr name DEFAULT_MARKETPLACE_CREATOR = name("pink.network");
+static constexpr name DEFAULT_MARKETPLACE_CREATOR = name("fees.atomic");
 
 
 /**
@@ -266,7 +266,7 @@ private:
 
 
     TABLE config_s {
-        string              version                  = "0.0.0";
+        string              version                  = "1.0.0";
         uint64_t            sale_counter             = 1;
         uint64_t            auction_counter          = 1;
         double              minimum_bid_increase     = 0.1;
