@@ -195,12 +195,13 @@ ACTION atomicmarket::withdraw(
     name owner,
     asset token_to_withdraw
 ) {
-    require_auth(owner);
+    check(has_auth(owner) || has_auth(get_self()),
+        "Missing required authority");
 
     check(token_to_withdraw.amount > 0, "token_to_withdraw must be positive");
 
     //This will throw if the user does not have sufficient balance
-    internal_decrease_balance(owner, token_to_withdraw, "Withdrawaö");
+    internal_decrease_balance(owner, token_to_withdraw, "Withdrawal");
 
     name withdraw_token_contract = require_get_supported_token_contract(token_to_withdraw.symbol);
 
@@ -1208,6 +1209,16 @@ void atomicmarket::internal_payout_sale(
         asset(seller_cut_amount, quantity.symbol),
         string("Asset Sale")
     );
+    
+    action(
+        permission_level{get_self(), name("active")},
+        get_self(),
+        name("withdraw"),
+        make_tuple(
+            seller,
+            asset(seller_cut_amount, quantity.symbol)
+        )
+    ).send();
 }
 
 
