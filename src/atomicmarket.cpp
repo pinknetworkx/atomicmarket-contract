@@ -455,7 +455,7 @@ ACTION atomicmarket::purchasesale(
             );
         } else {
             //Inverted
-            settlement_price_amount = sale_itr->listing_price.amount * intended_delphi_median * pow(
+            settlement_price_amount = (double) sale_itr->listing_price.amount * (double) intended_delphi_median * pow(
                 10, -pair_itr->quoted_precision + sale_itr->settlement_symbol.precision() -
                     sale_itr->listing_price.symbol.precision()
             );
