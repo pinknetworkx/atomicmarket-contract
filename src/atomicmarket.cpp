@@ -267,14 +267,7 @@ ACTION atomicmarket::announcesale(
     auto sale_itr = sales_by_hash.find(asset_ids_hash);
 
     while (sale_itr != sales_by_hash.end()) {
-
-        bool are_assets_equal = std::is_permutation(
-            sale_itr->asset_ids.begin(),
-            sale_itr->asset_ids.end(),
-            asset_ids.begin(),
-            asset_ids.end()
-        );
-        if (!are_assets_equal) {
+        if (asset_ids_hash != sale_itr->asset_ids_hash()) {
             break;
         }
 
@@ -545,14 +538,7 @@ ACTION atomicmarket::announceauct(
     auto auction_itr = auctions_by_hash.find(asset_ids_hash);
 
     while (auction_itr != auctions_by_hash.end()) {
-
-        bool are_assets_equal = std::is_permutation(
-            auction_itr->asset_ids.begin(),
-            auction_itr->asset_ids.end(),
-            asset_ids.begin(),
-            asset_ids.end()
-        );
-        if (!are_assets_equal) {
+        if (asset_ids_hash != auction_itr->asset_ids_hash()) {
             break;
         }
 
@@ -890,14 +876,7 @@ void atomicmarket::receive_asset_transfer(
             check(auction_itr != auctions_by_hash.end(),
                 "No announced, non-finished auction by the sender for these assets exists");
 
-            bool are_assets_equal = std::is_permutation(
-                auction_itr->asset_ids.begin(),
-                auction_itr->asset_ids.end(),
-                asset_ids.begin(),
-                asset_ids.end()
-            );
-
-            check(are_assets_equal,
+            check(asset_ids_hash == auction_itr->asset_ids_hash(),
                 "No announced, non-finished auction by the sender for these assets exists");
 
             if (auction_itr->seller == from && current_time_point().sec_since_epoch() < auction_itr->end_time) {
@@ -955,14 +934,7 @@ void atomicmarket::receive_asset_offer(
             check(sale_itr != sales_by_hash.end(),
                 "No sale was announced by this sender for the offered assets");
 
-            bool are_assets_equal = std::is_permutation(
-                sale_itr->asset_ids.begin(),
-                sale_itr->asset_ids.end(),
-                sender_asset_ids.begin(),
-                sender_asset_ids.end()
-            );
-
-            check(are_assets_equal,
+            check(asset_ids_hash == sale_itr->asset_ids_hash(),
                 "No sale was announced by this sender for the offered assets");
 
             if (sale_itr->seller == sender) {
