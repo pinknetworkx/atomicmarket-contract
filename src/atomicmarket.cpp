@@ -201,7 +201,7 @@ ACTION atomicmarket::withdraw(
     check(token_to_withdraw.amount > 0, "token_to_withdraw must be positive");
 
     //This will throw if the user does not have sufficient balance
-    internal_decrease_balance(owner, token_to_withdraw, "Withdrawal");
+    internal_decrease_balance(owner, token_to_withdraw);
 
     name withdraw_token_contract = require_get_supported_token_contract(token_to_withdraw.symbol);
 
@@ -468,8 +468,7 @@ ACTION atomicmarket::purchasesale(
 
     internal_decrease_balance(
         buyer,
-        sale_price,
-        string("Purchased Sale")
+        sale_price
     );
 
     internal_payout_sale(
@@ -705,15 +704,13 @@ ACTION atomicmarket::auctionbid(
     if (auction_itr->current_bidder != name("")) {
         internal_add_balance(
             auction_itr->current_bidder,
-            auction_itr->current_bid,
-            string("Auction outbid refund")
+            auction_itr->current_bid
         );
     }
 
     internal_decrease_balance(
         bidder,
-        bid,
-        string("Auction bid")
+        bid
     );
 
     check(is_valid_marketplace(taker_marketplace), "The taker marketplace is not a valid marketplace");
@@ -863,7 +860,7 @@ void atomicmarket::receive_token_transfer(name from, name to, asset quantity, st
     check(is_token_supported(get_first_receiver(), quantity.symbol), "The transferred token is not supported");
 
     if (memo == "deposit") {
-        internal_add_balance(from, quantity, string("Deposit"));
+        internal_add_balance(from, quantity);
     } else {
         check(false, "invalid memo");
     }
@@ -1184,30 +1181,26 @@ void atomicmarket::internal_payout_sale(
     auto maker_itr = marketplaces.find(maker_marketplace.value);
     internal_add_balance(
         maker_itr->creator,
-        asset(maker_cut_amount, quantity.symbol),
-        string("Maker Marketplace Fee")
+        asset(maker_cut_amount, quantity.symbol)
     );
 
     //Payout taker market
     auto taker_itr = marketplaces.find(taker_marketplace.value);
     internal_add_balance(
         taker_itr->creator,
-        asset(taker_cut_amount, quantity.symbol),
-        string("Taker Marketplace Fee")
+        asset(taker_cut_amount, quantity.symbol)
     );
 
     //Payout collection
     internal_add_balance(
         collection_author,
-        asset(collection_cut_amount, quantity.symbol),
-        string("Collection Market Fee")
+        asset(collection_cut_amount, quantity.symbol)
     );
 
     //Payout seller
     internal_add_balance(
         seller,
-        asset(seller_cut_amount, quantity.symbol),
-        string("Asset Sale")
+        asset(seller_cut_amount, quantity.symbol)
     );
     
     action(
@@ -1228,8 +1221,7 @@ void atomicmarket::internal_payout_sale(
 */
 void atomicmarket::internal_add_balance(
     name owner,
-    asset quantity,
-    string reason
+    asset quantity
 ) {
     if (quantity.amount == 0) {
         return;
@@ -1279,8 +1271,7 @@ void atomicmarket::internal_add_balance(
 */
 void atomicmarket::internal_decrease_balance(
     name owner,
-    asset quantity,
-    string reason
+    asset quantity
 ) {
     auto balance_itr = balances.require_find(owner.value,
         "The specified account does not have a balance table row");

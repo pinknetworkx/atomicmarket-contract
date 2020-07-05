@@ -266,7 +266,7 @@ private:
 
 
     TABLE config_s {
-        string              version                  = "1.0.2";
+        string              version                  = "1.0.3";
         uint64_t            sale_counter             = 1;
         uint64_t            auction_counter          = 1;
         double              minimum_bid_increase     = 0.1;
@@ -320,9 +320,9 @@ private:
         double collection_fee
     );
 
-    void internal_add_balance(name owner, asset quantity, string reason);
+    void internal_add_balance(name owner, asset quantity);
 
-    void internal_decrease_balance(name owner, asset quantity, string reason);
+    void internal_decrease_balance(name owner, asset quantity);
 
     void internal_transfer_assets(name to, vector <uint64_t> asset_ids, string memo);
 
