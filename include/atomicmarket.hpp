@@ -266,7 +266,7 @@ private:
 
 
     TABLE config_s {
-        string              version                  = "1.0.4";
+        string              version                  = "1.0.5";
         uint64_t            sale_counter             = 1;
         uint64_t            auction_counter          = 1;
         double              minimum_bid_increase     = 0.1;
@@ -334,7 +334,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
     if (code == receiver) {
         switch (action) {
             EOSIO_DISPATCH_HELPER(atomicmarket, \
-            (init)(setminbidinc)(addconftoken)(adddelphi)(setmarketfee)(regmarket)(withdraw) \
+            (init)(setminbidinc)(setversion)(addconftoken)(adddelphi)(setmarketfee)(regmarket)(withdraw) \
             (announcesale)(cancelsale)(purchasesale) \
             (announceauct)(cancelauct)(auctionbid)(auctclaimbuy)(auctclaimsel) \
             (paysaleram)(payauctram) \
