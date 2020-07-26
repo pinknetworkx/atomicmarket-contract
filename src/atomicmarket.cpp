@@ -237,6 +237,11 @@ ACTION atomicmarket::announcesale(
 
     check(asset_ids.size() != 0, "asset_ids needs to contain at least one id");
 
+    vector <uint64_t> asset_ids_copy = asset_ids;
+    std::sort(asset_ids_copy.begin(), asset_ids_copy.end());
+    check(std::adjacent_find(asset_ids_copy.begin(), asset_ids_copy.end()) == asset_ids_copy.end(),
+        "The asset_ids must not contain duplicates");
+
 
     atomicassets::assets_t seller_assets = atomicassets::get_assets(seller);
 
@@ -507,6 +512,11 @@ ACTION atomicmarket::announceauct(
     require_auth(seller);
 
     check(asset_ids.size() != 0, "asset_ids needs to contain at least one id");
+
+    vector <uint64_t> asset_ids_copy = asset_ids;
+    std::sort(asset_ids_copy.begin(), asset_ids_copy.end());
+    check(std::adjacent_find(asset_ids_copy.begin(), asset_ids_copy.end()) == asset_ids_copy.end(),
+        "The asset_ids must not contain duplicates");
 
 
     atomicassets::assets_t seller_assets = atomicassets::get_assets(seller);
