@@ -266,7 +266,7 @@ private:
 
 
     TABLE config_s {
-        string              version                  = "1.0.6";
+        string              version                  = "1.0.7";
         uint64_t            sale_counter             = 1;
         uint64_t            auction_counter          = 1;
         double              minimum_bid_increase     = 0.1;
@@ -311,13 +311,20 @@ private:
     double get_collection_fee(uint64_t asset_id, name asset_owner);
 
 
+    void internal_withdraw_tokens(
+        name withdrawer,
+        asset quantity,
+        string memo
+    );
+
     void internal_payout_sale(
         asset quantity,
         name seller,
         name maker_marketplace,
         name taker_marketplace,
         name collection_author,
-        double collection_fee
+        double collection_fee,
+        string seller_payout_message
     );
 
     void internal_add_balance(name owner, asset quantity);

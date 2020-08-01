@@ -195,27 +195,9 @@ ACTION atomicmarket::withdraw(
     name owner,
     asset token_to_withdraw
 ) {
-    check(has_auth(owner) || has_auth(get_self()),
-        "Missing required authority");
+    require_auth(owner);
 
-    check(token_to_withdraw.amount > 0, "token_to_withdraw must be positive");
-
-    //This will throw if the user does not have sufficient balance
-    internal_decrease_balance(owner, token_to_withdraw);
-
-    name withdraw_token_contract = require_get_supported_token_contract(token_to_withdraw.symbol);
-
-    action(
-        permission_level{get_self(), name("active")},
-        withdraw_token_contract,
-        name("transfer"),
-        make_tuple(
-            get_self(),
-            owner,
-            token_to_withdraw,
-            string("Withdrawal")
-        )
-    ).send();
+    internal_withdraw_tokens(owner, token_to_withdraw, "AtomicMarket Withdrawal");
 }
 
 
@@ -475,7 +457,8 @@ ACTION atomicmarket::purchasesale(
         sale_itr->maker_marketplace,
         taker_marketplace,
         get_collection_author(sale_itr->collection_name),
-        sale_itr->collection_fee
+        sale_itr->collection_fee,
+        "AtomicMarket Sale Payout - ID #" + to_string(sale_id)
     );
 
     action(
@@ -795,7 +778,8 @@ ACTION atomicmarket::auctclaimsel(
         auction_itr->maker_marketplace,
         auction_itr->taker_marketplace,
         get_collection_author(auction_itr->collection_name),
-        auction_itr->collection_fee
+        auction_itr->collection_fee,
+        "AtomicMarket Auction Payout - ID #" + to_string(auction_id)
     );
 
     if (auction_itr->claimed_by_buyer) {
@@ -1141,6 +1125,36 @@ bool atomicmarket::is_symbol_pair_supported(
 
 
 /**
+* Decreases the withdrawers balance by the specified quantity and transfers the tokens to them
+* Throws if the withdrawer does not have a sufficient balance
+*/
+void atomicmarket::internal_withdraw_tokens(
+    name withdrawer,
+    asset quantity,
+    string memo
+) {
+    check(quantity.amount > 0, "The quantity to withdraw must be positive");
+
+    //This will throw if the user does not have sufficient balance
+    internal_decrease_balance(withdrawer, quantity);
+
+    name withdraw_token_contract = require_get_supported_token_contract(quantity.symbol);
+
+    action(
+        permission_level{get_self(), name("active")},
+        withdraw_token_contract,
+        name("transfer"),
+        make_tuple(
+            get_self(),
+            withdrawer,
+            quantity,
+            memo
+        )
+    ).send();
+}
+
+
+/**
 * Gives the seller, the marketplaces and the collection their share of the sale price
 */
 void atomicmarket::internal_payout_sale(
@@ -1149,7 +1163,8 @@ void atomicmarket::internal_payout_sale(
     name maker_marketplace,
     name taker_marketplace,
     name collection_author,
-    double collection_fee
+    double collection_fee,
+    string seller_payout_message
 ) {
     config_s current_config = config.get();
 
@@ -1184,16 +1199,8 @@ void atomicmarket::internal_payout_sale(
         seller,
         asset(seller_cut_amount, quantity.symbol)
     );
-    
-    action(
-        permission_level{get_self(), name("active")},
-        get_self(),
-        name("withdraw"),
-        make_tuple(
-            seller,
-            asset(seller_cut_amount, quantity.symbol)
-        )
-    ).send();
+
+    internal_withdraw_tokens(seller, asset(seller_cut_amount, quantity.symbol), seller_payout_message);
 }
 
 
