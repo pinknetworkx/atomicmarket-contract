@@ -266,7 +266,7 @@ private:
 
 
     TABLE config_s {
-        string              version                  = "1.0.7";
+        string              version                  = "1.0.8";
         uint64_t            sale_counter             = 1;
         uint64_t            auction_counter          = 1;
         double              minimum_bid_increase     = 0.1;

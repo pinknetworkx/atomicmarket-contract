@@ -803,9 +803,13 @@ ACTION atomicmarket::paysaleram(
 
     auto sale_itr = sales.require_find(sale_id,
         "No sale with this id exists");
+    
+    sales_s sale_copy = *sale_itr;
 
-    sales.modify(sale_itr, payer, [&](auto &_offer) {
+    sales.erase(sale_itr);
 
+    sales.emplace(payer, [&](auto &_sale) {
+        _sale = sale_copy;
     });
 }
 
@@ -821,9 +825,13 @@ ACTION atomicmarket::payauctram(
 
     auto auction_itr = auctions.require_find(auction_id,
         "No auction with this id exists");
+    
+    auctions_s auction_copy = *auction_itr;
 
-    auctions.modify(auction_itr, payer, [&](auto &_offer) {
+    auctions.erase(auction_itr);
 
+    auctions.emplace(payer, [&](auto &_auction) {
+        _auction = auction_copy;
     });
 }
 
