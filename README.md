@@ -3,6 +3,13 @@ AtomicMarket is a marketplace to sell and auction [AtomicAssets](https://github.
 
 ### [Documentation can be found here.](https://github.com/pinknetworkx/atomicmarket-contract/wiki)
 
+## Useful links
+- API: https://github.com/pinknetworkx/eosio-contract-api
+- Live API example: https://wax.api.atomicassets.io/atomicmarket/docs/
+- Javascript module: https://www.npmjs.com/package/atomicmarket
+- Test cases (using Hydra framework): https://github.com/pinknetworkx/atomicmarket-contract-tests
+- Telegram group: https://t.me/atomicassets
+
 ## Key Features
 	
 - **NFTs do not have to be transferred for sales**
