@@ -477,6 +477,33 @@ ACTION atomicmarket::purchasesale(
 
 
 /**
+* Checks whether the provided asset ids, listing price and settlement symbol match the values of
+* the sale with the specified id and throws the transaction if this is not the case
+* 
+* Meant to be called within the same transaction as the purchase action for this sale in order to
+* validate that the sale with the specified id contains what the purchaser expects it to contain
+*/
+ACTION atomicmarket::assertsale(
+    uint64_t sale_id,
+    vector <uint64_t> asset_ids_to_assert,
+    asset listing_price_to_assert,
+    symbol settlement_symbol_to_assert
+) {
+    auto sale_itr = sales.require_find(sale_id,
+        "No sale with this sale_id exists");
+    
+    check(asset_ids_to_assert == sale_itr->asset_ids,
+        "The asset ids to assert differ from the asset ids of this sale");
+    
+    check(listing_price_to_assert == sale_itr->listing_price,
+        "The listing price to assert differs from the listing price of this sale");
+    
+    check(settlement_symbol_to_assert == sale_itr->settlement_symbol,
+        "The settlement symbol to assert differs from the settlement symbol of this sale");
+}
+
+
+/**
 * Create an auction listing
 * For the auction to become active, the seller needs to use the atomicassets transfer action to transfer the assets
 * to the atomicmarket contract with the memo "auction"
@@ -789,6 +816,25 @@ ACTION atomicmarket::auctclaimsel(
             _auction.claimed_by_seller = true;
         });
     }
+}
+
+
+/**
+* Checks whether the provided asset ids match those of the auction with the specified id
+* and throws the transaction if this is not the case
+* 
+* Meant to be called within the same transaction as a bid action for this auction in order to
+* validate that the auction with the specified id contains what the bidder expects it to contain
+*/
+ACTION atomicmarket::assertauct(
+    uint64_t auction_id,
+    vector <uint64_t> asset_ids_to_assert
+) {
+    auto auction_itr = auctions.require_find(auction_id,
+        "No auction with this auction_id exists");
+    
+    check(asset_ids_to_assert == auction_itr->asset_ids,
+        "The asset ids to assert differ from the asset ids of this auction");
 }
 
 
