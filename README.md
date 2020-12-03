@@ -34,4 +34,4 @@ AtomicMarket is a marketplace to sell and auction [AtomicAssets](https://github.
 	
 - **Collection fees**
 
-	Collections can define a market fee between 0 and 15% in the AtomicAssets contract. This fee is repected by the AtomicMarket and paid to the authors of the collection.
+	Collections can define a market fee between 0 and 15% in the AtomicAssets contract. This fee is respected by the AtomicMarket and paid to the authors of the collection.
