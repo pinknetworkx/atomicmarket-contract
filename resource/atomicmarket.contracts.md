@@ -20,6 +20,30 @@ This action may only be called with the permission of {{$action.account}}.
 
 
 
+<h1 class="contract">convcounters</h1>
+
+---
+spec_version: "0.2.0"
+title: Converts config counters
+summary: 'Converts deprecated config counters into using the counters table'
+icon: https://atomicassets.io/image/logo256.png#108AEE3530F4EB368A4B0C28800894CFBABF46534F48345BF6453090554C52D5
+---
+
+<b>Description:</b>
+<div class="description">
+The deprecated (since version 1.3.0) sale_counter and auction_counter in the config singleton are added to the counters table.
+
+The counter values in the config singleton are set to 0.
+</div>
+
+<b>Clauses:</b>
+<div class="clauses">
+This action may only be called with the permission of {{$action.account}}.
+</div>
+
+
+
+
 <h1 class="contract">setminbidinc</h1>
 
 ---

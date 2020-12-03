@@ -4,9 +4,9 @@
 
 
 /**
-*  Initializes the config table. Only needs to be called once when first deploying the contract
+* Initializes the config table. Only needs to be called once when first deploying the contract
 * 
-*  @required_auth The contract itself
+* @required_auth The contract itself
 */
 ACTION atomicmarket::init() {
     require_auth(get_self());
@@ -22,9 +22,42 @@ ACTION atomicmarket::init() {
 
 
 /**
-*  Sets the minimum bid increase compared to the previous bid
+* Converts the now deprecated sale and auction counters in the config singleton
+* into using the counters table
 * 
-*  @required_auth The contract itself
+* Calling this only is necessary when upgrading the contract from a lower version to 1.3.0
+* When deploying a fresh contract, this action can be ignored completely
+* 
+* @required_auth The contract itself
+*/
+ACTION atomicmarket::convcounters() {
+    require_auth(get_self());
+
+    config_s current_config = config.get();
+
+    check(current_config.sale_counter != 0 && current_config.auction_counter != 0,
+        "The sale or auction counters have already been converted");
+
+    counters.emplace(get_self(), [&](auto &_counter) {
+        _counter.counter_name = name("sale");
+        _counter.counter_value = current_config.sale_counter;
+    });
+    current_config.sale_counter = 0;
+
+    counters.emplace(get_self(), [&](auto &_counter) {
+        _counter.counter_name = name("auction");
+        _counter.counter_value = current_config.auction_counter;
+    });
+    current_config.auction_counter = 0;
+
+    config.set(current_config, get_self());
+}
+
+
+/**
+* Sets the minimum bid increase compared to the previous bid
+* 
+* @required_auth The contract itself
 */
 ACTION atomicmarket::setminbidinc(double minimum_bid_increase) {
     require_auth(get_self());
@@ -37,9 +70,9 @@ ACTION atomicmarket::setminbidinc(double minimum_bid_increase) {
 
 
 /**
-*  Sets the version for the config table
+* Sets the version for the config table
 * 
-*  @required_auth The contract itself
+* @required_auth The contract itself
 */
 ACTION atomicmarket::setversion(string new_version) {
     require_auth(get_self());
@@ -52,9 +85,9 @@ ACTION atomicmarket::setversion(string new_version) {
 
 
 /**
-*  Adds a token that can be used to sell assets for
+* Adds a token that can be used to sell assets for
 * 
-*  @required_auth The contract itself
+* @required_auth The contract itself
 */
 ACTION atomicmarket::addconftoken(name token_contract, symbol token_symbol) {
     require_auth(get_self());
@@ -1049,8 +1082,8 @@ ACTION atomicmarket::paybuyoram(
 
 
 /**
-*  This function is called when a transfer receipt from any token contract is sent to the atomicmarket contract
-*  It handels deposits and adds the transferred tokens to the sender's balance table row
+* This function is called when a transfer receipt from any token contract is sent to the atomicmarket contract
+* It handels deposits and adds the transferred tokens to the sender's balance table row
 */
 void atomicmarket::receive_token_transfer(name from, name to, asset quantity, string memo) {
     if (to != get_self()) {

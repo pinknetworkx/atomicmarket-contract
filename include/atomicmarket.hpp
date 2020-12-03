@@ -33,6 +33,8 @@ public:
 
     ACTION init();
 
+    ACTION convcounters();
+
     ACTION setminbidinc(
         double minimum_bid_increase
     );
@@ -430,7 +432,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
     if (code == receiver) {
         switch (action) {
             EOSIO_DISPATCH_HELPER(atomicmarket, \
-            (init)(setminbidinc)(setversion)(addconftoken)(adddelphi)(setmarketfee)(regmarket)(withdraw) \
+            (init)(convcounters)(setminbidinc)(setversion)(addconftoken)(adddelphi)(setmarketfee)(regmarket)(withdraw) \
             (announcesale)(cancelsale)(purchasesale)(assertsale) \
             (announceauct)(cancelauct)(auctionbid)(auctclaimbuy)(auctclaimsel)(assertauct) \
             (createbuyo)(cancelbuyo)(acceptbuyo)(declinebuyo) \
