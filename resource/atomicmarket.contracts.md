@@ -280,6 +280,28 @@ This action may only be called with the permission of {{buyer}}.
 
 
 
+<h1 class="contract">assertsale</h1>
+
+---
+spec_version: "0.2.0"
+title: Asserts sale details
+summary: 'The asset ids and price of the sale {{nowrap sale_id}} is asserted'
+icon: https://atomicassets.io/image/logo256.png#108AEE3530F4EB368A4B0C28800894CFBABF46534F48345BF6453090554C52D5
+---
+
+<b>Description:</b>
+<div class="description">
+Asserts whether the sale with the id {{sale_id}} is for the asset ids {{asset_ids_to_assert}}, whether the listing price is {{listing_price_to_assert}} and whether the settlement symbol is {{settlement_symbol_to_assert}}
+If any of these are not true, the transaction fails. Otherwise, nothing happens.
+</div>
+
+<b>Clauses:</b>
+<div class="clauses">
+</div>
+
+
+
+
 <h1 class="contract">announceauct</h1>
 
 ---
@@ -399,7 +421,7 @@ This action may only be called with the permission of the winner of the auction 
 
 
 
-<h1 class="contract">auctclaimbuy</h1>
+<h1 class="contract">auctclaimsel</h1>
 
 ---
 spec_version: "0.2.0"
@@ -418,6 +440,157 @@ The marketplaces facilitating the auction creation and the final bid, the author
 <b>Clauses:</b>
 <div class="clauses">
 This action may only be called with the permission of the seller of the auction with the ID {{auction_id}}.
+</div>
+
+
+
+
+<h1 class="contract">assertauct</h1>
+
+---
+spec_version: "0.2.0"
+title: Asserts auction details
+summary: 'The asset ids of the auction {{nowrap auction_id}} is asserted'
+icon: https://atomicassets.io/image/logo256.png#108AEE3530F4EB368A4B0C28800894CFBABF46534F48345BF6453090554C52D5
+---
+
+<b>Description:</b>
+<div class="description">
+Asserts whether the auction with the id {{auction_id}} is for the asset ids {{asset_ids_to_assert}}
+If it is not, the transaction fails. Otherwise, nothing happens.
+</div>
+
+<b>Clauses:</b>
+<div class="clauses">
+</div>
+
+
+
+
+<h1 class="contract">createbuyo</h1>
+
+---
+spec_version: "0.2.0"
+title: Create a buyoffer
+summary: '{{nowrap sender}} creates a buyoffer for {{nowrap recipient}}'
+icon: https://atomicassets.io/image/logo256.png#108AEE3530F4EB368A4B0C28800894CFBABF46534F48345BF6453090554C52D5
+---
+
+<b>Description:</b>
+<div class="description">
+{{sender}} creates a buyoffer, offering {{price}} for the assets with the following ids, owned by {{recipient}}:
+{{#each asset_ids}}
+    - {{this}}
+{{/each}}
+
+The price is deducted from {{sender}}'s balance.
+
+{{recipient}} may accept this buyoffer, exchanging the previously mentioned assets for the specified price (excluding fees).
+
+{{#if maker_marketplace}}The marketplace with the name {{maker_marketplace}} facilitates this buyoffer creation.
+{{else}}The default marketplace facilitates this buyoffer creation.
+{{/if}}
+
+{{#if memo}}There is a memo attached to the buyoffer stating:
+    {{memo}}
+{{else}}No memo is attached to the buyoffer.
+{{/if}}
+</div>
+
+<b>Clauses:</b>
+<div class="clauses">
+This action may only be called with the permission of {{sender}}.
+</div>
+
+
+
+
+<h1 class="contract">cancelbuyo</h1>
+
+---
+spec_version: "0.2.0"
+title: Cancels a buyoffer
+summary: 'The buyoffer {{nowrap buyoffer_id}} is cancelled'
+icon: https://atomicassets.io/image/logo256.png#108AEE3530F4EB368A4B0C28800894CFBABF46534F48345BF6453090554C52D5
+---
+
+<b>Description:</b>
+<div class="description">
+The buyoffer with the id {{buyoffer_id}} is cancelled.
+
+The price of the buyoffer is added to the balance of the buyoffer's sender.
+</div>
+
+<b>Clauses:</b>
+<div class="clauses">
+This action may only be called with the permission of the sender of the buyoffer.
+</div>
+
+
+
+
+<h1 class="contract">acceptbuyo</h1>
+
+---
+spec_version: "0.2.0"
+title: Accepts a buyoffer
+summary: 'The buyoffer {{nowrap buyoffer_id}} is accepted'
+icon: https://atomicassets.io/image/logo256.png#108AEE3530F4EB368A4B0C28800894CFBABF46534F48345BF6453090554C52D5
+---
+
+<b>Description:</b>
+<div class="description">
+The buyoffer with the id {{buyoffer_id}} is accepted by the recipient of the buyoffer.
+
+If the asset ids of the buyoffer differ from {{expected_asset_ids}}, the transaction fails.
+
+If the price of the buyoffer differs from {{expected_price}}, the transaction fails.
+
+{{#if taker_marketplace}}The marketplace with the name {{taker_marketplace}} facilitates this buyoffer acceptance.
+{{else}}The default marketplace facilitates this buyoffer acceptance.
+{{/if}}
+
+The recipient needs to have previously created an AtomicAssets trade offer, offerring the assets of the buyoffer to the AtomicMarket account without asking for anything in return.
+
+The AtomicAssets trade offer is accepted and the assets of the buyoffer are forwarded to the sender of the buyoffer.
+
+The marketplaces facilitating the buyoffer creation and the acceptance, the author of the collection that the traded assets belong to, and the recipient of the buyoffer each get their share of the offered price added to their balances.
+
+</div>
+
+<b>Clauses:</b>
+<div class="clauses">
+This action may only be called with the permission of the recipient of the buyoffer.
+</div>
+
+
+
+
+<h1 class="contract">declinebuyo</h1>
+
+---
+spec_version: "0.2.0"
+title: Declines a buyoffer
+summary: 'The buyoffer {{nowrap buyoffer_id}} is declined'
+icon: https://atomicassets.io/image/logo256.png#108AEE3530F4EB368A4B0C28800894CFBABF46534F48345BF6453090554C52D5
+---
+
+<b>Description:</b>
+<div class="description">
+The buyoffer with the id {{buyoffer_id}} is declined by the recipient of the buyoffer.
+
+The price of the buyoffer is added to the balance of the buyoffer's sender.
+
+{{#if decline_memo}}There is a memo attached to the decline stating:
+    {{decline_memo}}
+{{else}}No memo is attached to the decline.
+{{/if}}
+
+</div>
+
+<b>Clauses:</b>
+<div class="clauses">
+This action may only be called with the permission of the recipient of the buyoffer.
 </div>
 
 
@@ -457,6 +630,28 @@ icon: https://atomicassets.io/image/logo256.png#108AEE3530F4EB368A4B0C28800894CF
 <b>Description:</b>
 <div class="description">
 {{payer}} pays for the RAM associated with the table entry of the auction with the ID {{auction_id}}. The content of the table entry does not change.
+</div>
+
+<b>Clauses:</b>
+<div class="clauses">
+This action may only be called with the permission of {{payer}}.
+</div>
+
+
+
+
+<h1 class="contract">paybuyoram</h1>
+
+---
+spec_version: "0.2.0"
+title: Pay for the RAM of a buyoffer 
+summary: '{{nowrap payer}} pays for the RAM of the buyoffer with the ID {{nowrap buyoffer_id}}'
+icon: https://atomicassets.io/image/logo256.png#108AEE3530F4EB368A4B0C28800894CFBABF46534F48345BF6453090554C52D5
+---
+
+<b>Description:</b>
+<div class="description">
+{{payer}} pays for the RAM associated with the table entry of the buyoffer with the ID {{buyoffer_id}}. The content of the table entry does not change.
 </div>
 
 <b>Clauses:</b>

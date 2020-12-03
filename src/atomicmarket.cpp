@@ -217,35 +217,7 @@ ACTION atomicmarket::announcesale(
 ) {
     require_auth(seller);
 
-    check(asset_ids.size() != 0, "asset_ids needs to contain at least one id");
-
-    vector <uint64_t> asset_ids_copy = asset_ids;
-    std::sort(asset_ids_copy.begin(), asset_ids_copy.end());
-    check(std::adjacent_find(asset_ids_copy.begin(), asset_ids_copy.end()) == asset_ids_copy.end(),
-        "The asset_ids must not contain duplicates");
-
-
-    atomicassets::assets_t seller_assets = atomicassets::get_assets(seller);
-
-    name assets_collection_name = name("");
-    for (uint64_t asset_id : asset_ids) {
-        auto asset_itr = seller_assets.require_find(asset_id,
-            ("You do not own at least one of the assets - " + to_string(asset_id)).c_str());
-
-        if (asset_itr->template_id != -1) {
-            atomicassets::templates_t asset_template = atomicassets::get_templates(asset_itr->collection_name);
-            auto template_itr = asset_template.find(asset_itr->template_id);
-            check(template_itr->transferable,
-                ("At least one of the assets is not transferable - " + to_string(asset_id)).c_str());
-        }
-
-        if (assets_collection_name == name("")) {
-            assets_collection_name = asset_itr->collection_name;
-        } else {
-            check(assets_collection_name == asset_itr->collection_name,
-                "You can only list multiple assets from the same collection");
-        }
-    }
+    name assets_collection_name = get_collection_and_check_assets(seller, asset_ids);
 
 
     checksum256 asset_ids_hash = hash_asset_ids(asset_ids);
@@ -277,13 +249,11 @@ ACTION atomicmarket::announcesale(
 
     check(is_valid_marketplace(maker_marketplace), "The maker marketplace is not a valid marketplace");
 
-    double collection_fee = get_collection_fee(asset_ids[0], seller);
+    double collection_fee = get_collection_fee(assets_collection_name);
     check(collection_fee <= atomicassets::MAX_MARKET_FEE,
         "The collection fee is too high. This should have been prevented by the atomicassets contract");
 
-    config_s current_config = config.get();
-    uint64_t sale_id = current_config.sale_counter++;
-    config.set(current_config, get_self());
+    uint64_t sale_id = consume_counter(name("sale"));
 
     sales.emplace(seller, [&](auto &_sale) {
         _sale.sale_id = sale_id;
@@ -470,7 +440,11 @@ ACTION atomicmarket::purchasesale(
         )
     ).send();
 
-    internal_transfer_assets(buyer, sale_itr->asset_ids, "AtomicMarket Purchase");
+    internal_transfer_assets(
+        buyer,
+        sale_itr->asset_ids,
+        "AtomicMarket Purchased Sale - ID # " + to_string(sale_id)
+    );
 
     sales.erase(sale_itr);
 }
@@ -482,6 +456,8 @@ ACTION atomicmarket::purchasesale(
 * 
 * Meant to be called within the same transaction as the purchase action for this sale in order to
 * validate that the sale with the specified id contains what the purchaser expects it to contain
+* 
+* @required_auth None
 */
 ACTION atomicmarket::assertsale(
     uint64_t sale_id,
@@ -521,35 +497,7 @@ ACTION atomicmarket::announceauct(
 ) {
     require_auth(seller);
 
-    check(asset_ids.size() != 0, "asset_ids needs to contain at least one id");
-
-    vector <uint64_t> asset_ids_copy = asset_ids;
-    std::sort(asset_ids_copy.begin(), asset_ids_copy.end());
-    check(std::adjacent_find(asset_ids_copy.begin(), asset_ids_copy.end()) == asset_ids_copy.end(),
-        "The asset_ids must not contain duplicates");
-
-
-    atomicassets::assets_t seller_assets = atomicassets::get_assets(seller);
-
-    name assets_collection_name = name("");
-    for (uint64_t asset_id : asset_ids) {
-        auto asset_itr = seller_assets.require_find(asset_id,
-            ("You do not own at least one of the assets - " + to_string(asset_id)).c_str());
-
-        if (asset_itr->template_id != -1) {
-            atomicassets::templates_t asset_template = atomicassets::get_templates(asset_itr->collection_name);
-            auto template_itr = asset_template.find(asset_itr->template_id);
-            check(template_itr->transferable,
-                ("At least one of the assets is not transferable - " + to_string(asset_id)).c_str());
-        }
-
-        if (assets_collection_name == name("")) {
-            assets_collection_name = asset_itr->collection_name;
-        } else {
-            check(assets_collection_name == asset_itr->collection_name,
-                "You can only list multiple assets from the same collection");
-        }
-    }
+    name assets_collection_name = get_collection_and_check_assets(seller, asset_ids);
 
 
     checksum256 asset_ids_hash = hash_asset_ids(asset_ids);
@@ -574,7 +522,7 @@ ACTION atomicmarket::announceauct(
 
     check(is_valid_marketplace(maker_marketplace), "The maker marketplace is not a valid marketplace");
 
-    double collection_fee = get_collection_fee(asset_ids[0], seller);
+    double collection_fee = get_collection_fee(assets_collection_name);
     check(collection_fee <= atomicassets::MAX_MARKET_FEE,
         "The collection fee is too high. This should have been prevented by the atomicassets contract");
 
@@ -584,9 +532,7 @@ ACTION atomicmarket::announceauct(
     check(duration <= current_config.maximum_auction_duration,
         "The specified duration is longer than the maximum auction duration");
 
-    uint64_t auction_id = current_config.auction_counter++;
-    config.set(current_config, get_self());
-
+    uint64_t auction_id = consume_counter(name("auction"));
 
     auctions.emplace(seller, [&](auto &_auction) {
         _auction.auction_id = auction_id;
@@ -660,7 +606,11 @@ ACTION atomicmarket::cancelauct(
         check(auction_itr->current_bidder == name(""),
             "This auction already has a bid. Auctions with bids can't be cancelled");
 
-        internal_transfer_assets(auction_itr->seller, auction_itr->asset_ids, string("Cancelled Auction"));
+        internal_transfer_assets(
+            auction_itr->seller,
+            auction_itr->asset_ids,
+            "AtomicMarket Cancelled Auction - ID # " + to_string(auction_id)
+        );
     }
 
     auctions.erase(auction_itr);
@@ -760,7 +710,7 @@ ACTION atomicmarket::auctclaimbuy(
     internal_transfer_assets(
         auction_itr->current_bidder,
         auction_itr->asset_ids,
-        string("You won an auction")
+        "AtomicMarket Won Auction - ID # " + to_string(auction_id)
     );
 
     if (auction_itr->claimed_by_seller) {
@@ -825,6 +775,8 @@ ACTION atomicmarket::auctclaimsel(
 * 
 * Meant to be called within the same transaction as a bid action for this auction in order to
 * validate that the auction with the specified id contains what the bidder expects it to contain
+* 
+* @required_auth None
 */
 ACTION atomicmarket::assertauct(
     uint64_t auction_id,
@@ -835,6 +787,198 @@ ACTION atomicmarket::assertauct(
     
     check(asset_ids_to_assert == auction_itr->asset_ids,
         "The asset ids to assert differ from the asset ids of this auction");
+}
+
+
+/**
+* Creates a buyoffer
+* The specified price is deducted from the sender's balance
+* The recipient then has the option to trade the specified assets for the offered price (excluding fees)
+* 
+* @required_auth sender
+*/
+ACTION atomicmarket::createbuyo(
+    name sender,
+    name recipient,
+    asset price,
+    vector <uint64_t> asset_ids,
+    string memo,
+    name maker_marketplace
+) {
+    require_auth(sender);
+
+    name assets_collection_name = get_collection_and_check_assets(recipient, asset_ids);
+
+    // Not needed technically, as invalid symbols would simply fail when attempting to decrease
+    // the balance. Only meant to give more meaningful error messages.
+    check(is_symbol_supported(price.symbol), "The symbol of the specified price is not supported");
+
+    check(price.amount > 0, "The price must be greater than zero");
+    internal_decrease_balance(sender, price);
+
+    check(memo.length() <= 256, "A buyoffer memo can only be 256 characters max");
+
+
+    check(is_valid_marketplace(maker_marketplace), "The maker marketplace is not a valid marketplace");
+
+    uint64_t buyoffer_id = consume_counter(name("buyoffer"));
+
+    buyoffers.emplace(sender, [&](auto &_buyoffer) {
+        _buyoffer.buyoffer_id = buyoffer_id;
+        _buyoffer.sender = sender;
+        _buyoffer.recipient = recipient;
+        _buyoffer.price = price;
+        _buyoffer.asset_ids = asset_ids;
+        _buyoffer.memo = memo;
+        _buyoffer.maker_marketplace = maker_marketplace;
+        _buyoffer.collection_name = assets_collection_name;
+        _buyoffer.collection_fee = get_collection_fee(assets_collection_name);
+    });
+
+
+    action(
+        permission_level{get_self(), name("active")},
+        get_self(),
+        name("lognewbuyo"),
+        make_tuple(
+            buyoffer_id,
+            sender,
+            recipient,
+            price,
+            asset_ids,
+            memo,
+            maker_marketplace,
+            assets_collection_name,
+            get_collection_fee(assets_collection_name)
+        )
+    ).send();
+}
+
+
+/**
+* Cancels (erases) a buyoffer
+* The price that has previously been deducted when creating the buyoffer is added
+* back to the senders balance
+* 
+* @required_auth The sender of the buyoffer
+*/
+ACTION atomicmarket::cancelbuyo(
+    uint64_t buyoffer_id
+) {
+    auto buyoffer_itr = buyoffers.require_find(buyoffer_id,
+        "No buyoffer with this id exists");
+    
+    require_auth(buyoffer_itr->sender);
+
+    internal_add_balance(buyoffer_itr->sender, buyoffer_itr->price);
+
+    buyoffers.erase(buyoffer_itr);
+}
+
+
+/**
+* Accepts a buyoffer
+* Calling this action expects that the recipient of the buyoffer had created an AtomicAssets
+* trade offer, which offers the assets of the buyoffer to the AtomicMarket contract, while
+* asking for nothing in return and using the memo "buyoffer"
+* 
+* The AtomicAssets offer with the highest offer_id is looked at, which means that the recipient
+* should create the AtomicAssets offer and then call this action within the same transaction to
+* make sure that they are executed directly after one antoher
+* 
+* The AtomicMarket will then accept this trade offer and transfer the assets to the sender of
+* the buyoffer, and pay out the offered price to the recipient
+* 
+* The price is subject to the same fees as sales or auctions
+* 
+* @required_auth The recipient of the buyoffer
+*/
+ACTION atomicmarket::acceptbuyo(
+    uint64_t buyoffer_id,
+    vector <uint64_t> expected_asset_ids,
+    asset expected_price,
+    name taker_marketplace
+) {
+    auto buyoffer_itr = buyoffers.require_find(buyoffer_id,
+        "No buyoffer with this id exists");
+    
+    require_auth(buyoffer_itr->recipient);
+
+    check(buyoffer_itr->asset_ids == expected_asset_ids,
+        "The asset ids of this buyoffer differ from the expected asset ids");
+    check(buyoffer_itr->price == expected_price,
+        "The price of this buyoffer differ from the expected price");
+    
+    // This could theoretically fail if there is not a single AtomicAssets offer exists
+    // Because it is assumed that this will rarely if ever be the case, no explicit check is added for that
+    auto last_offer_itr = --atomicassets::offers.end();
+
+    check(last_offer_itr->sender == buyoffer_itr->recipient && last_offer_itr->recipient == get_self(),
+        "The last created AtomicAssets offer must be from the buyoffer recipient to the AtomicMarket contract");
+    
+    check(last_offer_itr->sender_asset_ids == buyoffer_itr->asset_ids,
+        "The last created AtomicAssets offer must contain the assets of the buyoffer");
+    check(last_offer_itr->recipient_asset_ids.size() == 0,
+        "The last created AtomicAssets offer must not ask for any assets in return");
+    
+    check(last_offer_itr->memo == "buyoffer",
+        "The last created AtomicAssets offer must have the memo \"buyoffer\"");
+
+
+    // It is not checked whether the AtomicAssets offer is valid, because this will be checked in the
+    // acceptoffer action, and if the offer is invalid, the transaction will throw
+    action(
+        permission_level{get_self(), name("active")},
+        atomicassets::ATOMICASSETS_ACCOUNT,
+        name("acceptoffer"),
+        make_tuple(
+            last_offer_itr->offer_id
+        )
+    ).send();
+
+    internal_transfer_assets(
+        buyoffer_itr->sender,
+        buyoffer_itr->asset_ids,
+        "AtomicMarket Accepted Buyoffer - ID # " + to_string(buyoffer_id)
+    );
+
+
+    check(is_valid_marketplace(taker_marketplace), "The taker marketplace is not a valid marketplace");
+    
+    internal_payout_sale(
+        buyoffer_itr->price,
+        buyoffer_itr->recipient,
+        buyoffer_itr->maker_marketplace,
+        taker_marketplace,
+        get_collection_author(buyoffer_itr->collection_name),
+        buyoffer_itr->collection_fee,
+        "AtomicMarket Buyoffer Payout - ID #" + to_string(buyoffer_id)
+    );
+
+
+    buyoffers.erase(buyoffer_itr);
+}
+
+
+/**
+* Declines a buyoffer
+* 
+* @required_auth The recipient of the buyoffer
+*/
+ACTION atomicmarket::declinebuyo(
+    uint64_t buyoffer_id,
+    string decline_memo
+) {
+    auto buyoffer_itr = buyoffers.require_find(buyoffer_id,
+        "No buyoffer with this id exists");
+    
+    require_auth(buyoffer_itr->recipient);
+
+    check(decline_memo.length() <= 256, "A decline memo can only be 256 characters max");
+
+    internal_add_balance(buyoffer_itr->sender, buyoffer_itr->price);
+
+    buyoffers.erase(buyoffer_itr);
 }
 
 
@@ -878,6 +1022,28 @@ ACTION atomicmarket::payauctram(
 
     auctions.emplace(payer, [&](auto &_auction) {
         _auction = auction_copy;
+    });
+}
+
+
+/**
+* Pays the RAM cost for an already existing buyoffer
+*/
+ACTION atomicmarket::paybuyoram(
+    name payer,
+    uint64_t buyoffer_id
+) {
+    require_auth(payer);
+
+    auto buyoffer_itr = buyoffers.require_find(buyoffer_id,
+        "No buyoffer with this id exists");
+    
+    buyoffers_s buyoffer_copy = *buyoffer_itr;
+
+    buyoffers.erase(buyoffer_itr);
+
+    buyoffers.emplace(payer, [&](auto &_buyoffer) {
+        _buyoffer = buyoffer_copy;
     });
 }
 
@@ -1008,6 +1174,8 @@ void atomicmarket::receive_asset_offer(
             )
         ).send();
 
+    } else if (memo == "buyoffer") {
+        // Offers for buyoffers are handled in the acceptbuyo action and require no immediate action
     } else {
         check(false, "Invalid memo");
     }
@@ -1045,6 +1213,20 @@ ACTION atomicmarket::lognewauct(
     require_recipient(seller);
 }
 
+ACTION atomicmarket::lognewbuyo(
+    uint64_t buyoffer_id,
+    name sender,
+    name recipient,
+    asset price,
+    vector <uint64_t> asset_ids,
+    string memo,
+    name maker_marketplace,
+    name collection_name,
+    double collection_fee
+) {
+    require_auth(get_self());
+}
+
 ACTION atomicmarket::logsalestart(
     uint64_t sale_id,
     uint64_t offer_id
@@ -1059,12 +1241,42 @@ ACTION atomicmarket::logauctstart(
 }
 
 
-/**
-* Checks if the provided marketplace is a valid marketplace
-* A marketplace is valid if is in the marketplaces table
-*/
-bool atomicmarket::is_valid_marketplace(name marketplace) {
-    return (marketplaces.find(marketplace.value) != marketplaces.end());
+name atomicmarket::get_collection_and_check_assets(
+    name owner,
+    vector <uint64_t> asset_ids
+) {
+    check(asset_ids.size() != 0, "asset_ids needs to contain at least one id");
+
+    vector <uint64_t> asset_ids_copy = asset_ids;
+    std::sort(asset_ids_copy.begin(), asset_ids_copy.end());
+    check(std::adjacent_find(asset_ids_copy.begin(), asset_ids_copy.end()) == asset_ids_copy.end(),
+        "The asset_ids must not contain duplicates");
+
+
+    atomicassets::assets_t owner_assets = atomicassets::get_assets(owner);
+
+    name assets_collection_name = name("");
+    for (uint64_t asset_id : asset_ids) {
+        auto asset_itr = owner_assets.require_find(asset_id,
+            ("The specified account does not own at least one of the assets - "
+            + to_string(asset_id)).c_str());
+
+        if (asset_itr->template_id != -1) {
+            atomicassets::templates_t asset_template = atomicassets::get_templates(asset_itr->collection_name);
+            auto template_itr = asset_template.find(asset_itr->template_id);
+            check(template_itr->transferable,
+                ("At least one of the assets is not transferable - " + to_string(asset_id)).c_str());
+        }
+
+        if (assets_collection_name == name("")) {
+            assets_collection_name = asset_itr->collection_name;
+        } else {
+            check(assets_collection_name == asset_itr->collection_name,
+                "The specified asset ids must all belong to the same collection");
+        }
+    }
+
+    return assets_collection_name;
 }
 
 
@@ -1079,15 +1291,35 @@ name atomicmarket::get_collection_author(name collection_name) {
 
 /**
 * Gets the fee defined by a collection in the atomicassets contract
-* 
-* It is assumed that the specifeid owner is guaranteed to own the specifeid asset id
 */
-double atomicmarket::get_collection_fee(uint64_t asset_id, name asset_owner) {
-    atomicassets::assets_t owner_assets = atomicassets::get_assets(asset_owner);
-    auto asset_itr = owner_assets.require_find(asset_id);
-
-    auto collection_itr = atomicassets::collections.find(asset_itr->collection_name.value);
+double atomicmarket::get_collection_fee(name collection_name) {
+    auto collection_itr = atomicassets::collections.find(collection_name.value);
     return collection_itr->market_fee;
+}
+
+
+/**
+* Gets the current value of a counter and increments the counter by 1
+* If no counter with the specified name exists yet, it is treated as if the counter was 1
+*/
+uint64_t atomicmarket::consume_counter(name counter_name) {
+    uint64_t value;
+
+    auto counter_itr = counters.find(counter_name.value);
+    if (counter_itr == counters.end()) {
+        value = 1; // Starting with 1 instead of 0 because these ids can be front facing
+        counters.emplace(get_self(), [&](auto &_counter) {
+            _counter.counter_name = counter_name;
+            _counter.counter_value = 2;
+        });
+    } else {
+        value = counter_itr->counter_value;
+        counters.modify(counter_itr, get_self(), [&](auto &_counter) {
+            _counter.counter_value++;
+        });
+    }
+    
+    return value;
 }
 
 
@@ -1111,6 +1343,10 @@ name atomicmarket::require_get_supported_token_contract(
 }
 
 
+/**
+* Gets the symbol pair with the provided listing and settlement symbol combination
+* Throws if there is no symbol pair with the provided listing and settlement symbol combination
+*/
 atomicmarket::SYMBOLPAIR atomicmarket::require_get_symbol_pair(
     symbol listing_symbol,
     symbol settlement_symbol
@@ -1163,6 +1399,9 @@ bool atomicmarket::is_symbol_supported(
 }
 
 
+/**
+* Internal function to check whether a symbol pair with the specified listing and settlement symbols exists
+*/
 bool atomicmarket::is_symbol_pair_supported(
     symbol listing_symbol,
     symbol settlement_symbol
@@ -1175,6 +1414,15 @@ bool atomicmarket::is_symbol_pair_supported(
         }
     }
     return false;
+}
+
+
+/**
+* Checks if the provided marketplace is a valid marketplace
+* A marketplace is valid if is in the marketplaces table
+*/
+bool atomicmarket::is_valid_marketplace(name marketplace) {
+    return (marketplaces.find(marketplace.value) != marketplaces.end());
 }
 
 
@@ -1352,7 +1600,6 @@ void atomicmarket::internal_transfer_assets(
     vector <uint64_t> asset_ids,
     string memo
 ) {
-
     action(
         permission_level{get_self(), name("active")},
         atomicassets::ATOMICASSETS_ACCOUNT,

@@ -131,6 +131,32 @@ public:
     );
 
 
+    ACTION createbuyo(
+        name sender,
+        name recipient,
+        asset price,
+        vector <uint64_t> asset_ids,
+        string memo,
+        name maker_marketplace
+    );
+
+    ACTION cancelbuyo(
+        uint64_t buyoffer_id
+    );
+
+    ACTION acceptbuyo(
+        uint64_t buyoffer_id,
+        vector <uint64_t> expected_asset_ids,
+        asset expected_price,
+        name taker_marketplace
+    );
+
+    ACTION declinebuyo(
+        uint64_t buyoffer_id,
+        string decline_memo
+    );
+
+
     ACTION paysaleram(
         name payer,
         uint64_t sale_id
@@ -139,6 +165,11 @@ public:
     ACTION payauctram(
         name payer,
         uint64_t auction_id
+    );
+
+    ACTION paybuyoram(
+        name payer,
+        uint64_t buyoffer_id
     );
 
 
@@ -183,6 +214,18 @@ public:
         asset starting_bid,
         uint32_t duration,
         uint32_t end_time,
+        name maker_marketplace,
+        name collection_name,
+        double collection_fee
+    );
+
+    ACTION lognewbuyo(
+        uint64_t buyoffer_id,
+        name sender,
+        name recipient,
+        asset price,
+        vector <uint64_t> asset_ids,
+        string memo,
         name maker_marketplace,
         name collection_name,
         double collection_fee
@@ -267,6 +310,23 @@ private:
     auctions_t;
 
 
+    TABLE buyoffers_s {
+        uint64_t          buyoffer_id;
+        name              sender;
+        name              recipient;
+        asset             price;
+        vector <uint64_t> asset_ids;
+        string            memo;
+        name              maker_marketplace;
+        name              collection_name;
+        double            collection_fee;
+
+        uint64_t primary_key() const { return buyoffer_id; };
+    };
+
+    typedef multi_index <name("buyoffers"), buyoffers_s> buyoffers_t;
+
+
     TABLE marketplaces_s {
         name marketplace_name;
         name creator;
@@ -277,10 +337,20 @@ private:
     typedef multi_index <name("marketplaces"), marketplaces_s> marketplaces_t;
 
 
+    TABLE counters_s {
+        name     counter_name;
+        uint64_t counter_value;
+
+        uint64_t primary_key() const { return counter_name.value; };
+    };
+
+    typedef multi_index <name("counters"), counters_s> counters_t;
+
+
     TABLE config_s {
-        string              version                  = "1.1.0";
-        uint64_t            sale_counter             = 1;
-        uint64_t            auction_counter          = 1;
+        string              version                  = "1.2.0";
+        uint64_t            sale_counter             = 0; // deprecated and no longer used
+        uint64_t            auction_counter          = 0; // deprecated and no longer used
         double              minimum_bid_increase     = 0.1;
         uint32_t            minimum_auction_duration = 120; //2 minutes
         uint32_t            maximum_auction_duration = 2592000; //30 days
@@ -299,9 +369,21 @@ private:
 
     sales_t        sales        = sales_t(get_self(), get_self().value);
     auctions_t     auctions     = auctions_t(get_self(), get_self().value);
+    buyoffers_t    buyoffers    = buyoffers_t(get_self(), get_self().value);
     balances_t     balances     = balances_t(get_self(), get_self().value);
     marketplaces_t marketplaces = marketplaces_t(get_self(), get_self().value);
+    counters_t     counters     = counters_t(get_self(), get_self().value);
     config_t       config       = config_t(get_self(), get_self().value);
+
+
+    name get_collection_and_check_assets(name owner, vector <uint64_t> asset_ids);
+
+    name get_collection_author(name collection_name);
+
+    double get_collection_fee(name collection_name);
+
+
+    uint64_t consume_counter(name counter_name);
 
 
     name require_get_supported_token_contract(symbol token_symbol);
@@ -316,11 +398,6 @@ private:
     bool is_symbol_pair_supported(symbol listing_symbol, symbol settlement_symbol);
 
     bool is_valid_marketplace(name marketplace);
-
-
-    name get_collection_author(name collection_name);
-
-    double get_collection_fee(uint64_t asset_id, name asset_owner);
 
 
     void internal_withdraw_tokens(
@@ -356,7 +433,8 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
             (init)(setminbidinc)(setversion)(addconftoken)(adddelphi)(setmarketfee)(regmarket)(withdraw) \
             (announcesale)(cancelsale)(purchasesale)(assertsale) \
             (announceauct)(cancelauct)(auctionbid)(auctclaimbuy)(auctclaimsel)(assertauct) \
-            (paysaleram)(payauctram) \
+            (createbuyo)(cancelbuyo)(acceptbuyo)(declinebuyo) \
+            (paysaleram)(payauctram)(paybuyoram) \
             (lognewsale)(lognewauct)(logsalestart)(logauctstart))
         }
     } else if (code == atomicassets::ATOMICASSETS_ACCOUNT.value && action == name("transfer").value) {
