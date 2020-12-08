@@ -350,7 +350,7 @@ private:
 
 
     TABLE config_s {
-        string              version                  = "1.2.1";
+        string              version                  = "1.2.2";
         uint64_t            sale_counter             = 0; // deprecated and no longer used
         uint64_t            auction_counter          = 0; // deprecated and no longer used
         double              minimum_bid_increase     = 0.1;

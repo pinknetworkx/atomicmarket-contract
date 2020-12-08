@@ -939,7 +939,11 @@ ACTION atomicmarket::acceptbuyo(
     
     require_auth(buyoffer_itr->recipient);
 
-    check(buyoffer_itr->asset_ids == expected_asset_ids,
+    check(std::is_permutation(
+            buyoffer_itr->asset_ids.begin(),
+            buyoffer_itr->asset_ids.end(),
+            expected_asset_ids.begin()
+        ),
         "The asset ids of this buyoffer differ from the expected asset ids");
     check(buyoffer_itr->price == expected_price,
         "The price of this buyoffer differ from the expected price");
@@ -951,7 +955,11 @@ ACTION atomicmarket::acceptbuyo(
     check(last_offer_itr->sender == buyoffer_itr->recipient && last_offer_itr->recipient == get_self(),
         "The last created AtomicAssets offer must be from the buyoffer recipient to the AtomicMarket contract");
     
-    check(last_offer_itr->sender_asset_ids == buyoffer_itr->asset_ids,
+    check(std::is_permutation(
+            last_offer_itr->sender_asset_ids.begin(),
+            last_offer_itr->sender_asset_ids.end(),
+            buyoffer_itr->asset_ids.begin()
+        ),
         "The last created AtomicAssets offer must contain the assets of the buyoffer");
     check(last_offer_itr->recipient_asset_ids.size() == 0,
         "The last created AtomicAssets offer must not ask for any assets in return");
