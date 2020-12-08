@@ -134,7 +134,7 @@ public:
 
 
     ACTION createbuyo(
-        name sender,
+        name buyer,
         name recipient,
         asset price,
         vector <uint64_t> asset_ids,
@@ -223,7 +223,7 @@ public:
 
     ACTION lognewbuyo(
         uint64_t buyoffer_id,
-        name sender,
+        name buyer,
         name recipient,
         asset price,
         vector <uint64_t> asset_ids,
@@ -314,7 +314,7 @@ private:
 
     TABLE buyoffers_s {
         uint64_t          buyoffer_id;
-        name              sender;
+        name              buyer;
         name              recipient;
         asset             price;
         vector <uint64_t> asset_ids;
@@ -350,7 +350,7 @@ private:
 
 
     TABLE config_s {
-        string              version                  = "1.2.0";
+        string              version                  = "1.2.1";
         uint64_t            sale_counter             = 0; // deprecated and no longer used
         uint64_t            auction_counter          = 0; // deprecated and no longer used
         double              minimum_bid_increase     = 0.1;

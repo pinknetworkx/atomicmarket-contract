@@ -825,20 +825,22 @@ ACTION atomicmarket::assertauct(
 
 /**
 * Creates a buyoffer
-* The specified price is deducted from the sender's balance
+* The specified price is deducted from the buyer's balance
 * The recipient then has the option to trade the specified assets for the offered price (excluding fees)
 * 
-* @required_auth sender
+* @required_auth buyer
 */
 ACTION atomicmarket::createbuyo(
-    name sender,
+    name buyer,
     name recipient,
     asset price,
     vector <uint64_t> asset_ids,
     string memo,
     name maker_marketplace
 ) {
-    require_auth(sender);
+    require_auth(buyer);
+
+    check(buyer != recipient, "buyer and recipient can't be the same account");
 
     name assets_collection_name = get_collection_and_check_assets(recipient, asset_ids);
 
@@ -847,7 +849,7 @@ ACTION atomicmarket::createbuyo(
     check(is_symbol_supported(price.symbol), "The symbol of the specified price is not supported");
 
     check(price.amount > 0, "The price must be greater than zero");
-    internal_decrease_balance(sender, price);
+    internal_decrease_balance(buyer, price);
 
     check(memo.length() <= 256, "A buyoffer memo can only be 256 characters max");
 
@@ -856,9 +858,9 @@ ACTION atomicmarket::createbuyo(
 
     uint64_t buyoffer_id = consume_counter(name("buyoffer"));
 
-    buyoffers.emplace(sender, [&](auto &_buyoffer) {
+    buyoffers.emplace(buyer, [&](auto &_buyoffer) {
         _buyoffer.buyoffer_id = buyoffer_id;
-        _buyoffer.sender = sender;
+        _buyoffer.buyer = buyer;
         _buyoffer.recipient = recipient;
         _buyoffer.price = price;
         _buyoffer.asset_ids = asset_ids;
@@ -875,7 +877,7 @@ ACTION atomicmarket::createbuyo(
         name("lognewbuyo"),
         make_tuple(
             buyoffer_id,
-            sender,
+            buyer,
             recipient,
             price,
             asset_ids,
@@ -891,9 +893,9 @@ ACTION atomicmarket::createbuyo(
 /**
 * Cancels (erases) a buyoffer
 * The price that has previously been deducted when creating the buyoffer is added
-* back to the senders balance
+* back to the buyer's balance
 * 
-* @required_auth The sender of the buyoffer
+* @required_auth The buyer of the buyoffer
 */
 ACTION atomicmarket::cancelbuyo(
     uint64_t buyoffer_id
@@ -901,9 +903,9 @@ ACTION atomicmarket::cancelbuyo(
     auto buyoffer_itr = buyoffers.require_find(buyoffer_id,
         "No buyoffer with this id exists");
     
-    require_auth(buyoffer_itr->sender);
+    require_auth(buyoffer_itr->buyer);
 
-    internal_add_balance(buyoffer_itr->sender, buyoffer_itr->price);
+    internal_add_balance(buyoffer_itr->buyer, buyoffer_itr->price);
 
     buyoffers.erase(buyoffer_itr);
 }
@@ -970,7 +972,7 @@ ACTION atomicmarket::acceptbuyo(
     ).send();
 
     internal_transfer_assets(
-        buyoffer_itr->sender,
+        buyoffer_itr->buyer,
         buyoffer_itr->asset_ids,
         "AtomicMarket Accepted Buyoffer - ID # " + to_string(buyoffer_id)
     );
@@ -1009,7 +1011,7 @@ ACTION atomicmarket::declinebuyo(
 
     check(decline_memo.length() <= 256, "A decline memo can only be 256 characters max");
 
-    internal_add_balance(buyoffer_itr->sender, buyoffer_itr->price);
+    internal_add_balance(buyoffer_itr->buyer, buyoffer_itr->price);
 
     buyoffers.erase(buyoffer_itr);
 }
@@ -1248,7 +1250,7 @@ ACTION atomicmarket::lognewauct(
 
 ACTION atomicmarket::lognewbuyo(
     uint64_t buyoffer_id,
-    name sender,
+    name buyer,
     name recipient,
     asset price,
     vector <uint64_t> asset_ids,
