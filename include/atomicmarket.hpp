@@ -60,6 +60,26 @@ public:
         double taker_market_fee
     );
 
+    ACTION addbonusfee(
+        name fee_recipient,
+        double fee,
+        vector <name> applicable_counter_names,
+        string fee_name
+    );
+
+    ACTION addafeectr(
+        uint64_t bonusfee_id,
+        name counter_name_to_add
+    );
+
+    ACTION stopbonusfee(
+        uint64_t bonusfee_id
+    );
+
+    ACTION delbonusfee(
+        uint64_t bonusfee_id
+    );
+
 
     ACTION regmarket(
         name creator,
@@ -243,6 +263,12 @@ public:
     );
 
 private:
+    struct COUNTER_RANGE {
+        name counter_name;
+        uint64_t start_id;
+        uint64_t end_id;
+    };
+
     struct TOKEN {
         name   token_contract;
         symbol token_symbol;
@@ -349,8 +375,21 @@ private:
     typedef multi_index <name("counters"), counters_s> counters_t;
 
 
+    TABLE bonusfees_s {
+        uint64_t               bonusfee_id;
+        name                   fee_recipient;
+        double                 fee;
+        vector <COUNTER_RANGE> counter_ranges;
+        string                 fee_name;
+
+        uint64_t primary_key() const { return bonusfee_id; };
+    };
+
+    typedef multi_index <name("bonusfees"), bonusfees_s> bonusfees_t;
+
+
     TABLE config_s {
-        string              version                  = "1.2.2";
+        string              version                  = "1.3.0";
         uint64_t            sale_counter             = 0; // deprecated and no longer used
         uint64_t            auction_counter          = 0; // deprecated and no longer used
         double              minimum_bid_increase     = 0.1;
@@ -375,6 +414,7 @@ private:
     balances_t     balances     = balances_t(get_self(), get_self().value);
     marketplaces_t marketplaces = marketplaces_t(get_self(), get_self().value);
     counters_t     counters     = counters_t(get_self(), get_self().value);
+    bonusfees_t    bonusfees    = bonusfees_t(get_self(), get_self().value);
     config_t       config       = config_t(get_self(), get_self().value);
 
 
@@ -415,6 +455,8 @@ private:
         name taker_marketplace,
         name collection_author,
         double collection_fee,
+        name relevant_counter_name,
+        uint64_t relevant_counter_id,
         string seller_payout_message
     );
 
@@ -433,6 +475,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
         switch (action) {
             EOSIO_DISPATCH_HELPER(atomicmarket, \
             (init)(convcounters)(setminbidinc)(setversion)(addconftoken)(adddelphi)(setmarketfee)(regmarket)(withdraw) \
+            (addbonusfee)(addafeectr)(stopbonusfee)(delbonusfee) \
             (announcesale)(cancelsale)(purchasesale)(assertsale) \
             (announceauct)(cancelauct)(auctionbid)(auctclaimbuy)(auctclaimsel)(assertauct) \
             (createbuyo)(cancelbuyo)(acceptbuyo)(declinebuyo) \

@@ -25,7 +25,7 @@ ACTION atomicmarket::init() {
 * Converts the now deprecated sale and auction counters in the config singleton
 * into using the counters table
 * 
-* Calling this only is necessary when upgrading the contract from a lower version to 1.3.0
+* Calling this only is necessary when upgrading the contract from a lower version to 1.2.0
 * When deploying a fresh contract, this action can be ignored completely
 * 
 * @required_auth The contract itself
@@ -174,6 +174,138 @@ ACTION atomicmarket::setmarketfee(double maker_market_fee, double taker_market_f
 
     config.set(current_config, get_self());
 }
+
+
+/**
+* Adds an bonus fee to be paid for payouts of listings created in the future
+* with a counter name that is within the applicable counter names
+* 
+* @required_auth The contract itself
+*/
+ACTION atomicmarket::addbonusfee(
+    name fee_recipient,
+    double fee,
+    vector <name> applicable_counter_names,
+    string fee_name
+) {
+    require_auth(get_self());
+
+    check(is_account(fee_recipient), "The fee recipient is not a valid account");
+
+    check(fee > 0, "The fee must be positive");
+
+    check(applicable_counter_names.size() != 0,
+        "Applicable counter names must contain at least one name");
+
+    vector <COUNTER_RANGE> counter_ranges = {};
+
+    for (name counter_name : applicable_counter_names) {
+        auto counter_itr = counters.find(counter_name.value);
+        counter_ranges.push_back({
+            .counter_name = counter_name,
+            .start_id = counter_itr != counters.end() ? counter_itr->counter_value : 1,
+            .end_id = ULLONG_MAX
+        });
+    }
+
+    bonusfees.emplace(get_self(), [&](auto &_bonusfee) {
+        _bonusfee.bonusfee_id = consume_counter(name("bonusfee"));
+        _bonusfee.fee_recipient = fee_recipient;
+        _bonusfee.fee = fee;
+        _bonusfee.counter_ranges = counter_ranges;
+        _bonusfee.fee_name = fee_name;
+    });
+}
+
+
+/**
+* Adds an additional counter name to be added to an existing bonus fee
+* This will lead to the fee being applied to all future listings using the counter name
+* 
+* @required_auth The contract itself
+*/
+ACTION atomicmarket::addafeectr(
+    uint64_t bonusfee_id,
+    name counter_name_to_add
+) {
+    require_auth(get_self());
+
+    auto bonusfee_itr = bonusfees.require_find(bonusfee_id,
+        "No bonus fee with this id exists");
+    
+    check(bonusfee_itr->counter_ranges[0].end_id != ULLONG_MAX,
+        "Can't add a counter name to an bonus fee that is already stopped");
+    
+    auto counter_range_itr = std::find_if(
+        bonusfee_itr->counter_ranges.begin(),
+        bonusfee_itr->counter_ranges.end(),
+        [&](auto &counter_range) {
+            return counter_range.counter_name == counter_name_to_add;
+        }
+    );
+
+    check(counter_range_itr == bonusfee_itr->counter_ranges.end(),
+        "This counter name is already added to the bonus fee");
+    
+
+    vector <COUNTER_RANGE> counter_ranges = bonusfee_itr->counter_ranges;
+
+    auto counter_itr = counters.find(counter_name_to_add.value);
+    counter_ranges.push_back({
+        .counter_name = counter_name_to_add,
+        .start_id = counter_itr != counters.end() ? counter_itr->counter_value : 1,
+        .end_id = ULLONG_MAX
+    });
+
+    bonusfees.modify(bonusfee_itr, get_self(), [&](auto &_bonusfee) {
+        _bonusfee.counter_ranges = counter_ranges;
+    });
+}
+
+
+/**
+* Stops an bonus fee so that it is no longer paid by any listings created in the future
+* 
+* @required_auth The contract itself
+*/
+ACTION atomicmarket::stopbonusfee(
+    uint64_t bonusfee_id
+) {
+    require_auth(get_self());
+
+    auto bonusfee_itr = bonusfees.require_find(bonusfee_id,
+        "No bonus fee with this id exists");
+    
+    vector <COUNTER_RANGE> counter_ranges = bonusfee_itr->counter_ranges;
+
+    for (COUNTER_RANGE &counter_range : counter_ranges) {
+        auto counter_itr = counters.find(counter_range.counter_name.value);
+        counter_range.end_id = counter_itr != counters.end() ? counter_itr->counter_value : 1;
+    }
+
+    bonusfees.modify(bonusfee_itr, get_self(), [&](auto &_bonusfee) {
+        _bonusfee.counter_ranges = counter_ranges;
+    });
+}
+
+
+/**
+* Erases an bonus fee entirely, so that it is not paid by any listing, including past ones that have
+* originally been created with this fee
+* 
+* @required_auth The contract itself
+*/
+ACTION atomicmarket::delbonusfee(
+    uint64_t bonusfee_id
+) {
+    require_auth(get_self());
+
+    auto bonusfee_itr = bonusfees.require_find(bonusfee_id,
+        "No bonus fee with this id exists");
+
+    bonusfees.erase(bonusfee_itr);
+}
+
 
 
 /**
@@ -461,6 +593,8 @@ ACTION atomicmarket::purchasesale(
         taker_marketplace,
         get_collection_author(sale_itr->collection_name),
         sale_itr->collection_fee,
+        name("sale"),
+        sale_id,
         "AtomicMarket Sale Payout - ID #" + to_string(sale_id)
     );
 
@@ -789,6 +923,8 @@ ACTION atomicmarket::auctclaimsel(
         auction_itr->taker_marketplace,
         get_collection_author(auction_itr->collection_name),
         auction_itr->collection_fee,
+        name("auction"),
+        auction_id,
         "AtomicMarket Auction Payout - ID #" + to_string(auction_id)
     );
 
@@ -995,6 +1131,8 @@ ACTION atomicmarket::acceptbuyo(
         taker_marketplace,
         get_collection_author(buyoffer_itr->collection_name),
         buyoffer_itr->collection_fee,
+        name("buyoffer"),
+        buyoffer_id,
         "AtomicMarket Buyoffer Payout - ID #" + to_string(buyoffer_id)
     );
 
@@ -1509,43 +1647,87 @@ void atomicmarket::internal_payout_sale(
     name taker_marketplace,
     name collection_author,
     double collection_fee,
+    name relevant_counter_name,
+    uint64_t relevant_counter_id,
     string seller_payout_message
 ) {
     config_s current_config = config.get();
 
-    //Calculate cuts
-    uint64_t maker_cut_amount = (uint64_t)(current_config.maker_market_fee * (double) quantity.amount);
-    uint64_t taker_cut_amount = (uint64_t)(current_config.taker_market_fee * (double) quantity.amount);
-    uint64_t collection_cut_amount = (uint64_t)(collection_fee * (double) quantity.amount);
-    uint64_t seller_cut_amount = quantity.amount - maker_cut_amount - taker_cut_amount - collection_cut_amount;
+    struct FEE_PAYOUT {
+        name recipient;
+        uint64_t amount;
+    };
 
-    //Payout maker market
+    vector <FEE_PAYOUT> fee_payouts = {};
+
+    // Maker market fee
     auto maker_itr = marketplaces.find(maker_marketplace.value);
-    internal_add_balance(
-        maker_itr->creator,
-        asset(maker_cut_amount, quantity.symbol)
-    );
+    fee_payouts.push_back({
+        .recipient = maker_itr->creator,
+        .amount = (uint64_t)(current_config.maker_market_fee * (double) quantity.amount)
+    });
 
-    //Payout taker market
+    // Taker market fee
     auto taker_itr = marketplaces.find(taker_marketplace.value);
-    internal_add_balance(
-        taker_itr->creator,
-        asset(taker_cut_amount, quantity.symbol)
-    );
+    fee_payouts.push_back({
+        .recipient = taker_itr->creator,
+        .amount = (uint64_t)(current_config.taker_market_fee * (double) quantity.amount)
+    });
 
-    //Payout collection
-    internal_add_balance(
-        collection_author,
-        asset(collection_cut_amount, quantity.symbol)
-    );
+    // Collection fee
+    fee_payouts.push_back({
+        .recipient = collection_author,
+        .amount = (uint64_t)(collection_fee * (double) quantity.amount)
+    });
 
-    //Payout seller
+    // Bonus fees
+    for (auto bonusfee_itr = bonusfees.begin(); bonusfee_itr != bonusfees.end(); bonusfee_itr++) {
+        auto counter_range_itr = std::find_if(
+            bonusfee_itr->counter_ranges.begin(),
+            bonusfee_itr->counter_ranges.end(),
+            [&](auto &counter_range) {
+                return counter_range.counter_name == relevant_counter_name;
+            }
+        );
+
+        // If no counter range entry exists, it means that the bonus fee does not apply to
+        // this type of payout
+        if (counter_range_itr == bonusfee_itr->counter_ranges.end()) {
+            continue;
+        }
+        if (relevant_counter_id < counter_range_itr->start_id || relevant_counter_id >= counter_range_itr->end_id) {
+            continue;    
+        }
+
+        fee_payouts.push_back({
+            .recipient = bonusfee_itr->fee_recipient,
+            .amount = (uint64_t)(bonusfee_itr->fee * (double) quantity.amount)
+        });
+    }
+
+
+    asset seller_cut_quantity = quantity;
+
+    // Payout all fees
+    for (const FEE_PAYOUT &fee_payout : fee_payouts) {
+        asset fee_payout_quantity = asset(fee_payout.amount, quantity.symbol);
+
+        internal_add_balance(
+            fee_payout.recipient,
+            asset(fee_payout.amount, quantity.symbol)
+        );
+
+        seller_cut_quantity -= fee_payout_quantity;
+    }
+
+    // Payout seller
     internal_add_balance(
         seller,
-        asset(seller_cut_amount, quantity.symbol)
+        seller_cut_quantity
     );
 
-    internal_withdraw_tokens(seller, asset(seller_cut_amount, quantity.symbol), seller_payout_message);
+    // Directly transfer tokens to the seller
+    internal_withdraw_tokens(seller, seller_cut_quantity, seller_payout_message);
 }
 
 
@@ -1560,6 +1742,7 @@ void atomicmarket::internal_add_balance(
     if (quantity.amount == 0) {
         return;
     }
+    check(quantity.amount > 0, "Can't add negative balances");
 
     auto balance_itr = balances.find(owner.value);
 
