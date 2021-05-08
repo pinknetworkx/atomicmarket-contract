@@ -635,7 +635,7 @@ ACTION atomicmarket::assertsale(
     auto sale_itr = sales.require_find(sale_id,
         "No sale with this sale_id exists");
     
-    check(asset_ids_to_assert == sale_itr->asset_ids,
+    check(std::is_permutation(asset_ids_to_assert.begin(), asset_ids_to_assert.end(), sale_itr->asset_ids.begin()),
         "The asset ids to assert differ from the asset ids of this sale");
     
     check(listing_price_to_assert == sale_itr->listing_price,
@@ -954,7 +954,7 @@ ACTION atomicmarket::assertauct(
     auto auction_itr = auctions.require_find(auction_id,
         "No auction with this auction_id exists");
     
-    check(asset_ids_to_assert == auction_itr->asset_ids,
+    check(std::is_permutation(asset_ids_to_assert.begin(), asset_ids_to_assert.end(), auction_itr->asset_ids.begin()),
         "The asset ids to assert differ from the asset ids of this auction");
 }
 
