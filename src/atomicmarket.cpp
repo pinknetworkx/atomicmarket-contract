@@ -120,6 +120,9 @@ ACTION atomicmarket::adddelphi(
 ) {
     require_auth(get_self());
 
+    check(listing_symbol.is_valid(), "Invalid tpye listing_symbol");
+    check(settlement_symbol.is_valid(), "Invalid type settlement_symbol");
+
     check(listing_symbol != settlement_symbol,
         "Listing symbol and settlement symbol must be different");
 
@@ -362,6 +365,8 @@ ACTION atomicmarket::withdraw(
 ) {
     require_auth(owner);
 
+    check(token_to_withdraw.is_valid(), "Invalid type token_to_withdraw");
+
     internal_withdraw_tokens(owner, token_to_withdraw, "AtomicMarket Withdrawal");
 }
 
@@ -381,6 +386,9 @@ ACTION atomicmarket::announcesale(
     name maker_marketplace
 ) {
     require_auth(seller);
+
+    check(listing_price.is_valid(), "Invalid type listing_price");
+    check(settlement_symbol.is_valid(), "Invalid type settlement_symbol");
 
     name assets_collection_name = get_collection_and_check_assets(seller, asset_ids);
 
@@ -632,6 +640,9 @@ ACTION atomicmarket::assertsale(
     asset listing_price_to_assert,
     symbol settlement_symbol_to_assert
 ) {
+    check(listing_price_to_assert.is_valid(), "Invalid type listing_price_to_assert");
+    check(settlement_symbol_to_assert.is_valid(), "Invalid type settlement_symbol_to_assert");
+
     auto sale_itr = sales.require_find(sale_id,
         "No sale with this sale_id exists");
     
@@ -663,6 +674,8 @@ ACTION atomicmarket::announceauct(
     name maker_marketplace
 ) {
     require_auth(seller);
+
+    check(starting_bid.is_valid(), "Invalid type starting_bid");
 
     name assets_collection_name = get_collection_and_check_assets(seller, asset_ids);
 
@@ -798,6 +811,8 @@ ACTION atomicmarket::auctionbid(
     name taker_marketplace
 ) {
     require_auth(bidder);
+
+    check(bid.is_valid(), "Invalid type bid");
 
     auto auction_itr = auctions.require_find(auction_id,
         "No auction with this auction_id exists");
@@ -976,6 +991,8 @@ ACTION atomicmarket::createbuyo(
 ) {
     require_auth(buyer);
 
+    check(price.is_valid(), "Invalid type price");
+
     check(buyer != recipient, "buyer and recipient can't be the same account");
 
     name assets_collection_name = get_collection_and_check_assets(recipient, asset_ids);
@@ -1070,6 +1087,8 @@ ACTION atomicmarket::acceptbuyo(
     asset expected_price,
     name taker_marketplace
 ) {
+    check(expected_price.is_valid(), "Invalid type expected_price");
+
     auto buyoffer_itr = buyoffers.require_find(buyoffer_id,
         "No buyoffer with this id exists");
     
