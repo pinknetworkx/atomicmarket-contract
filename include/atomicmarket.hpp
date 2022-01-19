@@ -389,7 +389,7 @@ private:
 
 
     TABLE config_s {
-        string              version                  = "1.3.2";
+        string              version                  = "1.3.3";
         uint64_t            sale_counter             = 0; // deprecated and no longer used
         uint64_t            auction_counter          = 0; // deprecated and no longer used
         double              minimum_bid_increase     = 0.1;
@@ -480,7 +480,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
             (announceauct)(cancelauct)(auctionbid)(auctclaimbuy)(auctclaimsel)(assertauct) \
             (createbuyo)(cancelbuyo)(acceptbuyo)(declinebuyo) \
             (paysaleram)(payauctram)(paybuyoram) \
-            (lognewsale)(lognewauct)(logsalestart)(logauctstart))
+            (lognewsale)(lognewauct)(lognewbuyo)(logsalestart)(logauctstart))
         }
     } else if (code == atomicassets::ATOMICASSETS_ACCOUNT.value && action == name("transfer").value) {
         eosio::execute_action(name(receiver), name(code), &atomicmarket::receive_asset_transfer);
