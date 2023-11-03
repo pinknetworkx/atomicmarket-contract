@@ -472,6 +472,11 @@ private:
 extern "C"
 void apply(uint64_t receiver, uint64_t code, uint64_t action) {
     if (code == receiver) {
+        // Since some version of CDT onl 32 actions can be listed here, because of preprocessor
+        // magic. From 33 on code doesn't compile.
+        // Hacky solution: Split the switch into two...
+        // In the old CDT this creates interestingly enough the same WASM, so we can leave it as is
+        // to support both CDT versions
         switch (action) {
             EOSIO_DISPATCH_HELPER(atomicmarket, \
             (init)(convcounters)(setminbidinc)(setversion)(addconftoken)(adddelphi)(setmarketfee)(regmarket)(withdraw) \
@@ -480,7 +485,11 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
             (announceauct)(cancelauct)(auctionbid)(auctclaimbuy)(auctclaimsel)(assertauct) \
             (createbuyo)(cancelbuyo)(acceptbuyo)(declinebuyo) \
             (paysaleram)(payauctram)(paybuyoram) \
-            (lognewsale)(lognewauct)(lognewbuyo)(logsalestart)(logauctstart))
+            (lognewsale)(lognewauct))
+        }
+        switch(action) {
+            EOSIO_DISPATCH_HELPER(atomicmarket, \
+            (lognewbuyo)(logsalestart)(logauctstart))
         }
     } else if (code == atomicassets::ATOMICASSETS_ACCOUNT.value && action == name("transfer").value) {
         eosio::execute_action(name(receiver), name(code), &atomicmarket::receive_asset_transfer);
