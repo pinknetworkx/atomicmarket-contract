@@ -178,6 +178,49 @@ public:
         string decline_memo
     );
 
+    /**
+     * Create a buy offer for a template. The balance of the buyer must hold enough to cover the
+     * price. Ideally a frontend ensures this and adds a transfer action of the asset if required.
+     * @param buyer The name of the account who wants to buy a template
+     * @param price The price the buyer is willing to pay
+     * @param collection_name The name of the collection that has the template
+     * @param template_id The template id the buyer is looking for
+     * @param maker_marketplace The maker marketplace - gets a part of the royalties
+     */
+    ACTION createtbuyo(
+        name buyer,
+        asset price,
+        name collection_name,
+        uint64_t template_id,
+        name maker_marketplace
+    );
+
+    /**
+     * Cancel a buy offer for a template. The escrowed tokens will be added to the buyers balance
+     * again and they can withdraw them.
+     * @param buyoffer_id The id of the buy offer to cancel.
+     */
+    ACTION canceltbuyo(
+        uint64_t buyoffer_id
+    );
+
+    /**
+     * Fulfill a buy offer for a template. This will
+     * @param seller The name of the account selling an asset to the buyer
+     * @param buyoffer_id The id of the template buy offer to fulfill
+     * @param asset_id The id of the asset to fulfill the offer with. This must be of the correct
+     * template. It is expected That a trade offer with this asset (and no assets in return) is
+     * made to the atomicmarket smart contract with the memo "tbuyoffer"
+     * @param expected_price The price that is expected to be paid for the asset
+     * @param taker_marketplace The taker marketplace - gets a part of the royalties
+     */
+    ACTION fulfilltbuyo(
+        name seller,
+        uint64_t buyoffer_id,
+        uint64_t asset_id,
+        asset expected_price,
+        name taker_marketplace
+    );
 
     ACTION paysaleram(
         name payer,
@@ -248,6 +291,16 @@ public:
         asset price,
         vector <uint64_t> asset_ids,
         string memo,
+        name maker_marketplace,
+        name collection_name,
+        double collection_fee
+    );
+
+    ACTION lognewtbuyo(
+        uint64_t buyoffer_id,
+        name buyer,
+        asset price,
+        uint64_t template_id,
         name maker_marketplace,
         name collection_name,
         double collection_fee
@@ -354,6 +407,23 @@ private:
 
     typedef multi_index <name("buyoffers"), buyoffers_s> buyoffers_t;
 
+    /**
+     * Buy offers based on a template
+     */
+    TABLE template_buyoffer_s {
+        uint64_t buyoffer_id;
+        name     buyer;
+        asset    price;
+        uint64_t template_id;
+        name     maker_marketplace;
+        name     collection_name;
+        double   collection_fee;
+
+        uint64_t primary_key() const { return buyoffer_id; };
+    };
+
+    typedef multi_index <name("tbuyoffers"), template_buyoffer_s> template_buyoffers_t;
+
 
     TABLE marketplaces_s {
         name marketplace_name;
@@ -411,6 +481,7 @@ private:
     sales_t        sales        = sales_t(get_self(), get_self().value);
     auctions_t     auctions     = auctions_t(get_self(), get_self().value);
     buyoffers_t    buyoffers    = buyoffers_t(get_self(), get_self().value);
+    template_buyoffers_t template_buyoffers = template_buyoffers_t(get_self(), get_self().value);
     balances_t     balances     = balances_t(get_self(), get_self().value);
     marketplaces_t marketplaces = marketplaces_t(get_self(), get_self().value);
     counters_t     counters     = counters_t(get_self(), get_self().value);
@@ -472,6 +543,11 @@ private:
 extern "C"
 void apply(uint64_t receiver, uint64_t code, uint64_t action) {
     if (code == receiver) {
+        // Since some version of CDT onl 32 actions can be listed here, because of preprocessor
+        // magic. From 33 on code doesn't compile.
+        // Hacky solution: Split the switch into two...
+        // In the old CDT this creates interestingly enough the same WASM, so we can leave it as is
+        // to support both CDT versions
         switch (action) {
             EOSIO_DISPATCH_HELPER(atomicmarket, \
             (init)(convcounters)(setminbidinc)(setversion)(addconftoken)(adddelphi)(setmarketfee)(regmarket)(withdraw) \
@@ -480,7 +556,12 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
             (announceauct)(cancelauct)(auctionbid)(auctclaimbuy)(auctclaimsel)(assertauct) \
             (createbuyo)(cancelbuyo)(acceptbuyo)(declinebuyo) \
             (paysaleram)(payauctram)(paybuyoram) \
-            (lognewsale)(lognewauct)(lognewbuyo)(logsalestart)(logauctstart))
+            (lognewsale)(lognewauct))
+        }
+        switch(action) {
+            EOSIO_DISPATCH_HELPER(atomicmarket, \
+            (lognewbuyo)(logsalestart)(logauctstart) \
+            (createtbuyo)(canceltbuyo)(fulfilltbuyo))
         }
     } else if (code == atomicassets::ATOMICASSETS_ACCOUNT.value && action == name("transfer").value) {
         eosio::execute_action(name(receiver), name(code), &atomicmarket::receive_asset_transfer);

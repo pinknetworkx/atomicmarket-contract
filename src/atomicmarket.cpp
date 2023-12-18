@@ -1181,6 +1181,143 @@ ACTION atomicmarket::declinebuyo(
     buyoffers.erase(buyoffer_itr);
 }
 
+ACTION atomicmarket::createtbuyo(
+    name buyer, asset price, name collection_name, uint64_t template_id, name maker_marketplace
+) {
+    require_auth(buyer);
+
+    check(price.is_valid(), "Invalid type price");
+
+    // Check if the template id is correct (in the collection)
+    atomicassets::templates_t collection_templates(atomicassets::ATOMICASSETS_ACCOUNT,
+        collection_name.value);
+    collection_templates.require_find(template_id, "Invalid template id");
+
+    // Not needed technically, as invalid symbols would simply fail when attempting to decrease
+    // the balance. Only meant to give more meaningful error messages.
+    check(is_symbol_supported(price.symbol), "The symbol of the specified price is not supported");
+
+    check(price.amount > 0, "The price must be greater than zero");
+    internal_decrease_balance(buyer, price);
+
+    check(is_valid_marketplace(maker_marketplace),
+        "The maker marketplace is not a valid marketplace");
+
+    double collection_fee = get_collection_fee(collection_name);
+
+    uint64_t buyoffer_id = consume_counter(name("tbuyoffer"));
+    template_buyoffers.emplace(buyer, [&](auto &entry) {
+        entry.buyoffer_id = buyoffer_id;
+        entry.buyer = buyer;
+        entry.price = price;
+        entry.template_id = template_id;
+        entry.maker_marketplace = maker_marketplace;
+        entry.collection_name = collection_name;
+        entry.collection_fee = collection_fee;
+    });
+
+    action(
+        permission_level{get_self(), name("active")},
+        get_self(),
+        name("lognewtbuyo"),
+        make_tuple(
+            buyoffer_id,
+            buyer,
+            price,
+            template_id,
+            maker_marketplace,
+            collection_name,
+            collection_fee
+        )
+    ).send();
+}
+
+ACTION atomicmarket::canceltbuyo(uint64_t buyoffer_id) {
+    auto buyoffer_itr = template_buyoffers.require_find(
+        buyoffer_id, "No buyoffer with this id exists"
+    );
+
+    // Only the buyer can cancel
+    require_auth(buyoffer_itr->buyer);
+
+    internal_add_balance(buyoffer_itr->buyer, buyoffer_itr->price);
+
+    template_buyoffers.erase(buyoffer_itr);
+}
+
+ACTION atomicmarket::fulfilltbuyo(
+    name seller, uint64_t buyoffer_id, uint64_t asset_id, asset expected_price,
+    name taker_marketplace
+) {
+    check(expected_price.is_valid(), "Invalid type expected_price");
+
+    auto buyoffer_itr = template_buyoffers.require_find(buyoffer_id,
+        "No buyoffer with this id exists");
+
+    // Ensure the person selling authorized the transaction
+    require_auth(seller);
+
+    // Verify the seller is offering an asset of the correct template
+    auto seller_assets = atomicassets::get_assets(seller);
+    auto asset_itr = seller_assets.require_find(asset_id, "The seller must own the asset sold");
+    check(asset_itr->template_id == buyoffer_itr->template_id,
+        "The sold asset must have the correct template");
+
+    // Verify the seller will get the price they expect
+    check(buyoffer_itr->price == expected_price,
+        "The price of this buyoffer differs from the expected price");
+
+    // Get the last offer on atomic assets. It is expected that in the same transaction an offer
+    // with the memo "tbuyoffer" was made to atomicmarket with the singular asset
+    auto last_offer_itr = --atomicassets::offers.end();
+    // Verify the offer is from the correct account to atomicmarket
+    check(last_offer_itr->sender == seller && last_offer_itr->recipient == get_self(),
+        "The last created AtomicAssets offer must be from the seller to the AtomicMarket contract");
+    // Verify the offer contains exactly the one asset and does not expect anything in return
+    check(last_offer_itr->sender_asset_ids.size() == 1, "The offer must contain exactly one asset");
+    check(last_offer_itr->sender_asset_ids[0] == asset_id,
+        "The offer must contain the asset sold");
+    check(last_offer_itr->recipient_asset_ids.size() == 0,
+        "The last created AtomicAssets offer must not ask for any assets in return");
+
+    // Verify the memo of the offer to be as expected
+    check(last_offer_itr->memo == "tbuyoffer",
+        "The last created AtomicAssets offer must have the memo \"tbuyoffer\"");
+
+    // It is not checked whether the AtomicAssets offer is valid, because this will be checked in the
+    // acceptoffer action, and if the offer is invalid, the transaction will throw
+    action(
+        permission_level{get_self(), name("active")},
+        atomicassets::ATOMICASSETS_ACCOUNT,
+        name("acceptoffer"),
+        make_tuple(
+            last_offer_itr->offer_id
+        )
+    ).send();
+
+    internal_transfer_assets(
+        buyoffer_itr->buyer,
+        std::vector<uint64_t> { asset_id },
+        "AtomicMarket Accepted Template Buyoffer - ID # " + to_string(buyoffer_id)
+    );
+
+    check(is_valid_marketplace(taker_marketplace),
+        "The taker marketplace is not a valid marketplace");
+
+    internal_payout_sale(
+        buyoffer_itr->price,
+        seller,
+        buyoffer_itr->maker_marketplace,
+        taker_marketplace,
+        get_collection_author(buyoffer_itr->collection_name),
+        buyoffer_itr->collection_fee,
+        name("tbuyoffer"),
+        buyoffer_id,
+        "AtomicMarket Template Buyoffer Payout - ID #" + to_string(buyoffer_id)
+    );
+
+    template_buyoffers.erase(buyoffer_itr);
+}
 
 /**
 * Pays the RAM cost for an already existing sale
@@ -1374,7 +1511,7 @@ void atomicmarket::receive_asset_offer(
             )
         ).send();
 
-    } else if (memo == "buyoffer") {
+    } else if (memo == "buyoffer" || memo == "tbuyoffer") {
         // Offers for buyoffers are handled in the acceptbuyo action and require no immediate action
     } else {
         check(false, "Invalid memo");
@@ -1423,6 +1560,13 @@ ACTION atomicmarket::lognewbuyo(
     name maker_marketplace,
     name collection_name,
     double collection_fee
+) {
+    require_auth(get_self());
+}
+
+ACTION atomicmarket::lognewtbuyo(
+    uint64_t buyoffer_id, name buyer, asset price, uint64_t template_id, name maker_marketplace,
+    name collection_name, double collection_fee
 ) {
     require_auth(get_self());
 }
