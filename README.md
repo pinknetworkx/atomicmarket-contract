@@ -10,8 +10,7 @@
 > upgrade is executed.
 >
 > Stewardship of the AtomicMarket standard passed from Pink Network to Spielworks and then to
-> FACINGS. See
-> [AUTHORS.md](https://github.com/atomicassets/atomicmarket-contract/blob/main/AUTHORS.md).
+> FACINGS.
 
 AtomicMarket is a marketplace to sell and auction [AtomicAssets](https://github.com/pinknetworkx/atomicassets-contract) NFTs.
 
