@@ -1,4 +1,18 @@
 # AtomicMarket
+
+> **This repository is archived.** Development of the AtomicMarket contract continues at
+> [atomicassets/atomicmarket-contract](https://github.com/atomicassets/atomicmarket-contract), which
+> carries the full history of this repository including its `v1` tags.
+>
+> The current release there is
+> [v2.0.0](https://github.com/atomicassets/atomicmarket-contract/releases/tag/v2.0.0). The code in
+> this repository is the v1 line, which is what remains deployed on mainnet until the v2
+> upgrade is executed.
+>
+> Stewardship of the AtomicMarket standard passed from Pink Network to Spielworks and then to
+> FACINGS. See
+> [AUTHORS.md](https://github.com/atomicassets/atomicmarket-contract/blob/main/AUTHORS.md).
+
 AtomicMarket is a marketplace to sell and auction [AtomicAssets](https://github.com/pinknetworkx/atomicassets-contract) NFTs.
 
 ### [Documentation can be found here.](https://github.com/pinknetworkx/atomicmarket-contract/wiki)
